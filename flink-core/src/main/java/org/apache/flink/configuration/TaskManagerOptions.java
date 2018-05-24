@@ -62,6 +62,15 @@ public class TaskManagerOptions {
 				" shuts down the actor system if it detects that it has quarantined another actor system" +
 				" or if it has been quarantined by another actor system.");
 
+
+	/**
+	 * In which of the geo-distributed data centers this task manger is executed
+	 * */
+	public static final ConfigOption<String> GEO_LOCATION =
+		key("taskmanager.geo-location")
+		.defaultValue("UNKNOWN")
+		.withDescription("In which of the geo-distributed data centers this task manger is executed");
+
 	/**
 	 * The config parameter defining the task manager's hostname.
 	 */
@@ -226,6 +235,7 @@ public class TaskManagerOptions {
 	// ------------------------------------------------------------------------
 	//  Network Options
 	// ------------------------------------------------------------------------
+
 
 	/**
 	 * Number of buffers used in the network stack. This defines the number of possible tasks and
