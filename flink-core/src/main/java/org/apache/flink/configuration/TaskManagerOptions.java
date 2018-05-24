@@ -64,7 +64,7 @@ public class TaskManagerOptions {
 
 
 	/**
-	 * In which of the geo-distributed data centers this task manger is executed
+	 * In which of the geo-distributed data centers this task manger is executed.
 	 * */
 	public static final ConfigOption<String> GEO_LOCATION =
 		key("taskmanager.geo-location")

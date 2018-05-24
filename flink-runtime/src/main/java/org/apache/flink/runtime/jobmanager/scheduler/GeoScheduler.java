@@ -54,9 +54,9 @@ public class GeoScheduler extends Scheduler {
 
 	@Override
 	public void instanceDied(Instance instance) {
-		if(instance == null)
+		if(instance == null) {
 			throw new NullPointerException();
-
+		}
 
 		GeoLocation instanceLocation;
 		if(instance.getTaskManagerLocation() instanceof GeoTaskManagerLocation) {
