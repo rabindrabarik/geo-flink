@@ -1610,6 +1610,8 @@ object TaskManager {
         null
     }
 
+    configuration.setString(TaskManagerOptions.GEO_LOCATION, "UNKNOWN")
+
     // In Standalone mode, we generate a resource identifier.
     val resourceId = ResourceID.generate()
 
