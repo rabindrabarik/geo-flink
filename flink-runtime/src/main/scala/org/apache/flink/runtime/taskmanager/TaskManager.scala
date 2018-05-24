@@ -39,7 +39,7 @@ import org.apache.flink.runtime.blob.BlobCacheService
 import org.apache.flink.runtime.broadcast.BroadcastVariableManager
 import org.apache.flink.runtime.clusterframework.BootstrapTools
 import org.apache.flink.runtime.clusterframework.messages.StopCluster
-import org.apache.flink.runtime.clusterframework.types.{AllocationID, ResourceID}
+import org.apache.flink.runtime.clusterframework.types.{AllocationID, GeoLocation, ResourceID}
 import org.apache.flink.runtime.concurrent.{Executors, FutureUtils}
 import org.apache.flink.runtime.deployment.TaskDeploymentDescriptor
 import org.apache.flink.runtime.execution.ExecutionState
@@ -1708,6 +1708,7 @@ object TaskManager {
       taskManagerClass: Class[_ <: TaskManager])
     : Unit = {
 
+
     val highAvailabilityServices = HighAvailabilityServicesUtils.createHighAvailabilityServices(
       configuration,
       Executors.directExecutor(),
@@ -2028,9 +2029,12 @@ object TaskManager {
 
     val taskManagerConfiguration = TaskManagerConfiguration.fromConfiguration(configuration)
 
+    val geoLocation = GeoLocation.create(configuration.getString("geo-location", "UNKNOWN"))
+
     val taskManagerServices = TaskManagerServices.fromConfiguration(
       taskManagerServicesConfiguration,
       resourceID,
+      geoLocation,
       actorSystem.dispatcher,
       EnvironmentInformation.getSizeOfFreeHeapMemoryWithDefrag,
       EnvironmentInformation.getMaxJvmHeapMemory)

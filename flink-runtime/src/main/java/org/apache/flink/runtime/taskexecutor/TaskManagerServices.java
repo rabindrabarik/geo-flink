@@ -25,6 +25,7 @@ import org.apache.flink.core.memory.MemoryType;
 import org.apache.flink.queryablestate.network.stats.DisabledKvStateRequestStats;
 import org.apache.flink.runtime.broadcast.BroadcastVariableManager;
 import org.apache.flink.runtime.clusterframework.types.AllocationID;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.clusterframework.types.ResourceProfile;
 import org.apache.flink.runtime.io.disk.iomanager.IOManager;
@@ -46,6 +47,7 @@ import org.apache.flink.runtime.state.LocalRecoveryConfig;
 import org.apache.flink.runtime.state.TaskExecutorLocalStateStoresManager;
 import org.apache.flink.runtime.taskexecutor.slot.TaskSlotTable;
 import org.apache.flink.runtime.taskexecutor.slot.TimerService;
+import org.apache.flink.runtime.taskmanager.GeoTaskManagerLocation;
 import org.apache.flink.runtime.taskmanager.NetworkEnvironmentConfiguration;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.util.ExceptionUtils;
@@ -205,6 +207,48 @@ public class TaskManagerServices {
 	/**
 	 * Creates and returns the task manager services.
 	 *
+	 * @param taskManagerServicesConfiguration task manager configuration
+	 * @param taskIOExecutor executor for async IO operations.
+	 * @param geoLocation the geographic location where this task manager is starting
+	 * @param freeHeapMemoryWithDefrag an estimate of the size of the free heap memory
+	 * @param maxJvmHeapMemory the maximum JVM heap size
+	 * @return task manager components
+	 * @throws Exception
+	 */
+	public static TaskManagerServices fromConfiguration(
+		TaskManagerServicesConfiguration taskManagerServicesConfiguration,
+		ResourceID resourceID,
+		GeoLocation geoLocation,
+		Executor taskIOExecutor,
+		long freeHeapMemoryWithDefrag,
+		long maxJvmHeapMemory) throws Exception {
+
+		// pre-start checks
+		checkTempDirs(taskManagerServicesConfiguration.getTmpDirPaths());
+
+		final NetworkEnvironment network = createNetworkEnvironment(taskManagerServicesConfiguration, maxJvmHeapMemory);
+		network.start();
+
+		final TaskManagerLocation taskManagerLocation = new GeoTaskManagerLocation(
+			resourceID,
+			taskManagerServicesConfiguration.getTaskManagerAddress(),
+			network.getConnectionManager().getDataPort(),
+			geoLocation);
+
+		return fromConfigurationAndLocation(
+			taskManagerServicesConfiguration,
+			resourceID,
+			taskIOExecutor,
+			freeHeapMemoryWithDefrag,
+			maxJvmHeapMemory,
+			taskManagerLocation,
+			network
+		);
+	}
+
+	/**
+	 * Creates and returns the task manager services.
+	 *
 	 * @param resourceID resource ID of the task manager
 	 * @param taskManagerServicesConfiguration task manager configuration
 	 * @param taskIOExecutor executor for async IO operations.
@@ -230,6 +274,27 @@ public class TaskManagerServices {
 			resourceID,
 			taskManagerServicesConfiguration.getTaskManagerAddress(),
 			network.getConnectionManager().getDataPort());
+
+		return fromConfigurationAndLocation(
+			taskManagerServicesConfiguration,
+			resourceID,
+			taskIOExecutor,
+			freeHeapMemoryWithDefrag,
+			maxJvmHeapMemory,
+			taskManagerLocation,
+			network
+		);
+
+	}
+
+	private static TaskManagerServices fromConfigurationAndLocation(
+			TaskManagerServicesConfiguration taskManagerServicesConfiguration,
+			ResourceID resourceID,
+			Executor taskIOExecutor,
+			long freeHeapMemoryWithDefrag,
+			long maxJvmHeapMemory,
+			TaskManagerLocation taskManagerLocation,
+			NetworkEnvironment network) throws Exception {
 
 		// this call has to happen strictly after the network stack has been initialized
 		final MemoryManager memoryManager = createMemoryManager(taskManagerServicesConfiguration, freeHeapMemoryWithDefrag, maxJvmHeapMemory);
