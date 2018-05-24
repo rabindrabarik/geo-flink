@@ -4,9 +4,13 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.clusterframework.types.SlotProfile;
 import org.apache.flink.runtime.instance.Instance;
+import org.apache.flink.runtime.instance.SlotSharingGroupId;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
+import org.apache.flink.runtime.jobmaster.SlotRequestId;
+import org.apache.flink.runtime.messages.Acknowledge;
 import org.apache.flink.runtime.taskmanager.GeoTaskManagerLocation;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -17,7 +21,7 @@ import java.util.concurrent.Executor;
 /**
  * This scheduler allows Flink to make better allocation decisions when the task managers are executed in geo-distributed data centers
  * */
-public class GeoScheduler extends Scheduler {
+public class GeoScheduler extends AbstractScheduler {
 
 	private Map<GeoLocation, Set<Instance>> allInstancesByGeoLocation = new HashMap<>();
 
@@ -80,5 +84,15 @@ public class GeoScheduler extends Scheduler {
 	public void shutdown() {
 		super.shutdown();
 		allInstancesByGeoLocation.clear();
+	}
+
+	@Override
+	public CompletableFuture<LogicalSlot> allocateSlot(SlotRequestId slotRequestId, ScheduledUnit task, boolean allowQueued, SlotProfile slotProfile, Time allocationTimeout) {
+		return null;
+	}
+
+	@Override
+	public CompletableFuture<Acknowledge> cancelSlotRequest(SlotRequestId slotRequestId, @Nullable SlotSharingGroupId slotSharingGroupId, Throwable cause) {
+		return null;
 	}
 }
