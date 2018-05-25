@@ -35,11 +35,6 @@ public class GeoScheduler extends AbstractScheduler {
 	}
 
 	@Override
-	public CompletableFuture<LogicalSlot> allocateSlot(ScheduledUnit task, boolean allowQueued, SlotProfile slotProfile, Time timeout) {
-		return null;
-	}
-
-	@Override
 	public void newInstanceAvailable(Instance instance) {
 		super.newInstanceAvailable(instance);
 
@@ -50,6 +45,7 @@ public class GeoScheduler extends AbstractScheduler {
 		} else {
 			instanceLocation = GeoLocation.UNKNOWN;
 		}
+
 
 		Set<Instance> instanceSet = allInstancesByGeoLocation.getOrDefault(instanceLocation, new HashSet<>());
 		instanceSet.add(instance);
@@ -82,12 +78,13 @@ public class GeoScheduler extends AbstractScheduler {
 
 	@Override
 	public void shutdown() {
-		super.shutdown();
 		allInstancesByGeoLocation.clear();
+		super.shutdown();
 	}
 
 	@Override
 	public CompletableFuture<LogicalSlot> allocateSlot(SlotRequestId slotRequestId, ScheduledUnit task, boolean allowQueued, SlotProfile slotProfile, Time allocationTimeout) {
+
 		return null;
 	}
 

@@ -23,10 +23,7 @@ import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.executiongraph.Execution;
 import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.ExecutionVertex;
-import org.apache.flink.runtime.instance.DummyActorGateway;
-import org.apache.flink.runtime.instance.HardwareDescription;
-import org.apache.flink.runtime.instance.Instance;
-import org.apache.flink.runtime.instance.InstanceID;
+import org.apache.flink.runtime.instance.*;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
@@ -52,8 +49,12 @@ public class SchedulerTestUtils {
 	private static final AtomicInteger port = new AtomicInteger(10000);
 
 	// --------------------------------------------------------------------------------------------
-	
+
 	public static Instance getRandomInstance(int numSlots) {
+		return getRandomInstance(numSlots, DummyActorGateway.INSTANCE);
+	}
+
+	public static Instance getRandomInstance(int numSlots, ActorGateway gateway) {
 		if (numSlots <= 0) {
 			throw new IllegalArgumentException();
 		}
@@ -73,9 +74,10 @@ public class SchedulerTestUtils {
 		
 		final long GB = 1024L*1024*1024;
 		HardwareDescription resources = new HardwareDescription(4, 4*GB, 3*GB, 2*GB);
-		
+
+
 		return new Instance(
-			new ActorTaskManagerGateway(DummyActorGateway.INSTANCE),
+			new ActorTaskManagerGateway(gateway),
 			ci,
 			new InstanceID(),
 			resources,
@@ -109,7 +111,7 @@ public class SchedulerTestUtils {
 	public static Execution getTestVertex(TaskManagerLocation... preferredLocations) {
 		return getTestVertex(Arrays.asList(preferredLocations));
 	}
-	
+
 	
 	public static Execution getTestVertex(Iterable<TaskManagerLocation> preferredLocations) {
 		Collection<CompletableFuture<TaskManagerLocation>> preferredLocationFutures = new ArrayList<>(4);
