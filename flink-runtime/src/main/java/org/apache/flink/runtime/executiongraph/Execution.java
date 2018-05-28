@@ -1259,6 +1259,8 @@ public class Execution implements AccessExecution, Archiveable<ArchivedExecution
 
 	/**
 	 * Calculates the preferred locations based on the location preference constraint.
+	 * If locationPreferenceConstraint is ALL returns the combination of the preferred locations of this execution's vertex.
+	 * If locationPreferenceConstraint is ANY returns the combination of the preferred locations of this execution's vertex, filtering out those that are unknown yet
 	 *
 	 * @param locationPreferenceConstraint constraint for the location preference
 	 * @return Future containing the collection of preferred locations. This might not be completed if not all inputs

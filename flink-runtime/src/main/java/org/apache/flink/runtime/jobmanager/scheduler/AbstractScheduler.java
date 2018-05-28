@@ -218,7 +218,7 @@ public abstract class AbstractScheduler implements InstanceListener, SlotAvailab
 	}
 
 	/**
-	 * Tries to find a requested instance. If no such instance is available it will return a non-
+	 * Tries to find a requested instance with available resources. If no such instance is available it will return a non-
 	 * local instance. If no such instance exists (all slots occupied), then return null.
 	 *
 	 * <p><b>NOTE:</b> This method is not thread-safe, it needs to be synchronized by the caller.</p>

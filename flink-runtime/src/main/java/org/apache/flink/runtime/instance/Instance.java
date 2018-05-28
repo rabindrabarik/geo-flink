@@ -352,6 +352,9 @@ public class Instance implements SlotOwner {
 		return this.allocatedSlots.size();
 	}
 
+	/**
+	 * @return true if this instance is not dead and has available slots. False otherwise.
+	 * */
 	public boolean hasResourcesAvailable() {
 		return !isDead && getNumberOfAvailableSlots() > 0;
 	}
