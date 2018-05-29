@@ -143,6 +143,12 @@ public class JobManagerOptions {
 			.defaultValue(10L * 1000L)
 			.withDescription("The timeout in milliseconds for a idle slot in Slot Pool.");
 
+	public static final ConfigOption<Boolean> IS_GEO_SCHEDULING_ENABLED =
+		key("jobmanager.is-geo-scheduling-enabled")
+			.defaultValue(false)
+			.withDescription("True if deploying in a geo-distributed cluster");
+
+
 	// ---------------------------------------------------------------------------------------------
 
 	private JobManagerOptions() {

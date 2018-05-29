@@ -5,10 +5,14 @@ import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.clusterframework.types.SlotProfile;
 import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.instance.SlotSharingGroupId;
+import org.apache.flink.runtime.jobmaster.JobManagerGateway;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.apache.flink.runtime.jobmaster.SlotRequestId;
 import org.apache.flink.runtime.messages.Acknowledge;
+import org.apache.flink.runtime.rest.handler.legacy.metrics.MetricFetcher;
 import org.apache.flink.runtime.taskmanager.GeoTaskManagerLocation;
+import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
+import org.apache.flink.runtime.webmonitor.retriever.MetricQueryServiceRetriever;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -17,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This scheduler allows Flink to make better allocation decisions when the task managers are executed in geo-distributed data centers
@@ -25,13 +30,17 @@ public class GeoScheduler extends AbstractScheduler {
 
 	private Map<GeoLocation, Set<Instance>> allInstancesByGeoLocation = new HashMap<>();
 
+	private MetricFetcher metricFetcher;
+
 	/**
 	 * Creates a new scheduler.
 	 *
-	 * @param executor
+	 * @param executor the executor to run futures on
+	 * @param jobManagerRetriever a the gateway retriever for the job manager, for metrics retrieval
 	 */
-	public GeoScheduler(Executor executor) {
+	public GeoScheduler(Executor executor, GatewayRetriever<JobManagerGateway> jobManagerRetriever, MetricQueryServiceRetriever queryServiceRetriever) {
 		super(executor);
+		this.metricFetcher = new MetricFetcher<>(jobManagerRetriever, queryServiceRetriever, executor, Time.milliseconds(1000L));
 	}
 
 	@Override

@@ -56,6 +56,8 @@ import org.apache.flink.runtime.instance.{AkkaActorGateway, InstanceID, Instance
 import org.apache.flink.runtime.jobgraph.{JobGraph, JobStatus}
 import org.apache.flink.runtime.jobmanager.SubmittedJobGraphStore.SubmittedJobGraphListener
 import org.apache.flink.runtime.jobmanager.scheduler.{Scheduler => FlinkScheduler}
+import org.apache.flink.runtime.jobmanager.scheduler.{AbstractScheduler => FlinkAbstractScheduler}
+import org.apache.flink.runtime.jobmanager.scheduler.{GeoScheduler => FlinkGeoScheduler}
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway
 import org.apache.flink.runtime.jobmaster.JobMaster
 import org.apache.flink.runtime.leaderelection.{LeaderContender, LeaderElectionService}
@@ -124,7 +126,7 @@ class JobManager(
     protected val futureExecutor: ScheduledExecutorService,
     protected val ioExecutor: Executor,
     protected val instanceManager: InstanceManager,
-    protected val scheduler: FlinkScheduler,
+    protected val scheduler: FlinkAbstractScheduler,
     protected val blobServer: BlobServer,
     protected val libraryCacheManager: BlobLibraryCacheManager,
     protected val archive: ActorRef,
@@ -2347,7 +2349,6 @@ object JobManager {
     if (cliOptions.getJobManagerMode() == null) {
       throw new Exception("Missing parameter '--executionMode'")
     }
-
     LOG.info("Loading configuration from " + configDir)
     val configuration = GlobalConfiguration.loadConfiguration(configDir)
 
@@ -2424,16 +2425,49 @@ object JobManager {
       blobStore: BlobStore,
       metricRegistry: FlinkMetricRegistry) :
     (InstanceManager,
-    FlinkScheduler,
-    BlobServer,
-    BlobLibraryCacheManager,
-    RestartStrategyFactory,
-    FiniteDuration, // timeout
-    Int, // number of archived jobs
-    Option[Path], // archive path
-    FiniteDuration, // timeout for job recovery
-    JobManagerMetricGroup
-   ) = {
+      FlinkAbstractScheduler,
+      BlobServer,
+      BlobLibraryCacheManager,
+      RestartStrategyFactory,
+      FiniteDuration, // timeout
+      Int, // number of archived jobs
+      Option[Path], // archive path
+      FiniteDuration, // timeout for job recovery
+      JobManagerMetricGroup
+    ) = {
+      createJobManagerComponents(configuration, futureExecutor, ioExecutor, blobStore, metricRegistry, null)
+  }
+
+  /**
+    * Create the job manager components as (instanceManager, scheduler, libraryCacheManager,
+    *              archiverProps, defaultExecutionRetries,
+    *              delayBetweenRetries, timeout)
+    *
+    * @param configuration The configuration from which to parse the config values.
+    * @param futureExecutor to run JobManager's futures
+    * @param ioExecutor to run blocking io operations
+    * @param blobStore to store blobs persistently
+    * @param actorSystem (optionally) the actor system of this job manager. Allows to pass a reference to the scheduler
+    * @return The members for a default JobManager.
+    */
+  def createJobManagerComponents(
+      configuration: Configuration,
+      futureExecutor: ScheduledExecutorService,
+      ioExecutor: Executor,
+      blobStore: BlobStore,
+      metricRegistry: FlinkMetricRegistry,
+      actorSystem: ActorSystem) :
+    (InstanceManager,
+      FlinkAbstractScheduler,
+      BlobServer,
+      BlobLibraryCacheManager,
+      RestartStrategyFactory,
+      FiniteDuration,
+      Int,
+      Option[Path],
+      FiniteDuration,
+      JobManagerMetricGroup
+    ) = {
 
     val timeout: FiniteDuration = AkkaUtils.getTimeout(configuration)
 
@@ -2464,14 +2498,30 @@ object JobManager {
 
     var blobServer: BlobServer = null
     var instanceManager: InstanceManager = null
-    var scheduler: FlinkScheduler = null
+    var scheduler: FlinkAbstractScheduler = null
     var libraryCacheManager: BlobLibraryCacheManager = null
 
     try {
       blobServer = new BlobServer(configuration, blobStore)
       blobServer.start()
       instanceManager = new InstanceManager()
-      scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
+
+      //choosing the type of scheduler
+      if(configuration.getBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED)) {
+        if(actorSystem != null) {
+          val timeout = FutureUtils.toTime(AkkaUtils.getTimeout(configuration))
+          scheduler = new FlinkGeoScheduler(
+            ExecutionContext.fromExecutor(futureExecutor),
+            new AkkaJobManagerRetriever(actorSystem, timeout, 10, Time.milliseconds(50L)),
+            new AkkaQueryServiceRetriever(actorSystem, timeout))
+        } else {
+          LOG.error("Geo scheduling is enabled but no actor system passed, falling back to standard scheduling")
+          scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
+        }
+      } else {
+        scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
+      }
+
       libraryCacheManager =
         new BlobLibraryCacheManager(
           blobServer,
@@ -2494,7 +2544,7 @@ object JobManager {
         if (blobServer != null) {
           blobServer.close()
         }
-        
+
         throw t
     }
 
@@ -2543,7 +2593,7 @@ object JobManager {
    * @param archiveClass The class of the MemoryArchivist to be started
    * @return A tuple of references (JobManager Ref, Archiver Ref)
    */
-  def startJobManagerActors(
+  def   startJobManagerActors(
       configuration: Configuration,
       actorSystem: ActorSystem,
       futureExecutor: ScheduledExecutorService,
@@ -2615,7 +2665,8 @@ object JobManager {
       futureExecutor,
       ioExecutor,
       highAvailabilityServices.createBlobStore(),
-      metricRegistry)
+      metricRegistry,
+      actorSystem)
 
     val archiveProps = getArchiveProps(archiveClass, archiveCount, archivePath)
 
@@ -2666,7 +2717,7 @@ object JobManager {
     futureExecutor: ScheduledExecutorService,
     ioExecutor: Executor,
     instanceManager: InstanceManager,
-    scheduler: FlinkScheduler,
+    scheduler: FlinkAbstractScheduler,
     blobServer: BlobServer,
     libraryCacheManager: LibraryCacheManager,
     archive: ActorRef,
