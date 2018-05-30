@@ -1,10 +1,11 @@
-package org.apache.flink.runtime.jobmanager;
+package org.apache.flink.runtime.jobmanager.scheduler;
 
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.blob.VoidBlobStore;
+import org.apache.flink.runtime.jobmanager.JobManager;
 import org.apache.flink.runtime.jobmanager.scheduler.AbstractScheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;

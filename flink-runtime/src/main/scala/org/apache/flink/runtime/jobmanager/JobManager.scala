@@ -2434,9 +2434,8 @@ object JobManager {
       Option[Path], // archive path
       FiniteDuration, // timeout for job recovery
       JobManagerMetricGroup
-    ) = {
-      createJobManagerComponents(configuration, futureExecutor, ioExecutor, blobStore, metricRegistry, null)
-  }
+    ) = createJobManagerComponents(configuration, futureExecutor, ioExecutor, blobStore, metricRegistry,
+          AkkaUtils.createLocalActorSystem(new Configuration()))
 
   /**
     * Create the job manager components as (instanceManager, scheduler, libraryCacheManager,
@@ -2509,6 +2508,7 @@ object JobManager {
       //choosing the type of scheduler
       if(configuration.getBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED)) {
         if(actorSystem != null) {
+          //geoscheduling
           val timeout = FutureUtils.toTime(AkkaUtils.getTimeout(configuration))
           scheduler = new FlinkGeoScheduler(
             ExecutionContext.fromExecutor(futureExecutor),

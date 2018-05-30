@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * This scheduler allows Flink to make better allocation decisions when the task managers are executed in geo-distributed data centers
  * */
-public class GeoScheduler extends AbstractScheduler {
+public class GeoScheduler extends Scheduler {
 
 	private Map<GeoLocation, Set<Instance>> allInstancesByGeoLocation = new HashMap<>();
 
@@ -40,7 +40,7 @@ public class GeoScheduler extends AbstractScheduler {
 	 */
 	public GeoScheduler(Executor executor, GatewayRetriever<JobManagerGateway> jobManagerRetriever, MetricQueryServiceRetriever queryServiceRetriever) {
 		super(executor);
-		this.metricFetcher = new MetricFetcher<>(jobManagerRetriever, queryServiceRetriever, executor, Time.milliseconds(1000L));
+		this.metricFetcher = new MetricFetcher<>(jobManagerRetriever, queryServiceRetriever, executor, Time.milliseconds(1000L), Time.milliseconds(500L));
 	}
 
 	@Override
@@ -86,19 +86,15 @@ public class GeoScheduler extends AbstractScheduler {
 	}
 
 	@Override
+	public CompletableFuture<LogicalSlot> allocateSlot(SlotRequestId slotRequestId, ScheduledUnit task, boolean allowQueued, SlotProfile slotProfile, Time allocationTimeout) {
+		metricFetcher.update();
+
+		return super.allocateSlot(slotRequestId, task, allowQueued, slotProfile, allocationTimeout);
+	}
+
+	@Override
 	public void shutdown() {
 		allInstancesByGeoLocation.clear();
 		super.shutdown();
-	}
-
-	@Override
-	public CompletableFuture<LogicalSlot> allocateSlot(SlotRequestId slotRequestId, ScheduledUnit task, boolean allowQueued, SlotProfile slotProfile, Time allocationTimeout) {
-
-		return null;
-	}
-
-	@Override
-	public CompletableFuture<Acknowledge> cancelSlotRequest(SlotRequestId slotRequestId, @Nullable SlotSharingGroupId slotSharingGroupId, Throwable cause) {
-		return null;
 	}
 }

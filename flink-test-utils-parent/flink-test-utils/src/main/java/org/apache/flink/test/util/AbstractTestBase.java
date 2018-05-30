@@ -19,6 +19,7 @@
 package org.apache.flink.test.util;
 
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.testutils.category.LegacyAndNew;
 import org.apache.flink.util.FileUtils;
 
@@ -61,12 +62,20 @@ public abstract class AbstractTestBase extends TestBaseUtils {
 
 	private static final int DEFAULT_PARALLELISM = 4;
 
+	private static final MiniClusterResource.MiniClusterType CLUSTER_TYPE = MiniClusterResource.MiniClusterType.LEGACY;
+
+	private static Configuration newGeoSchedulingConfiguration() {
+		Configuration ret = new Configuration();
+		ret.setBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED, true);
+		return ret;
+	}
+
 	@ClassRule
 	public static MiniClusterResource miniClusterResource = new MiniClusterResource(
 		new MiniClusterResource.MiniClusterResourceConfiguration(
-			new Configuration(),
+			newGeoSchedulingConfiguration(),
 			1,
-			DEFAULT_PARALLELISM));
+			DEFAULT_PARALLELISM), CLUSTER_TYPE);
 
 	@ClassRule
 	public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
