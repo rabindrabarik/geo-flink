@@ -2582,6 +2582,9 @@ object JobManager {
   /**
    * Starts the JobManager and job archiver based on the given configuration, in
    * the given actor system.
+    *
+    * In comparison with the overloaded options, gives random job manager and archive actor names
+    *
    *
    * @param configuration The configuration for the JobManager
    * @param actorSystem The actor system running the JobManager
@@ -2622,6 +2625,8 @@ object JobManager {
   /**
    * Starts the JobManager and job archiver based on the given configuration, in the
    * given actor system.
+    *
+    * In comparison with the overloaded options, allow to specify optional job manager and archive actor names
    *
    * @param configuration The configuration for the JobManager
    * @param actorSystem The actor system running the JobManager

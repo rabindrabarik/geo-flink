@@ -7,6 +7,7 @@ import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.blob.VoidBlobStore;
 import org.apache.flink.runtime.jobmanager.scheduler.AbstractScheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
 import org.apache.flink.runtime.metrics.NoOpMetricRegistry;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.util.TestLogger;
@@ -17,8 +18,11 @@ import static org.junit.Assert.assertTrue;
 
 public class SchedulerChoiceTest extends TestLogger {
 
+	/**
+	 * Tests that when the geo scheduling is enabled in config and the actor system passed the geoscheduler is instantiated
+	 */
 	@Test
-	public void geoSchedulingChoiceWithActor() {
+	public void geoSchedulingChoiceWithActorTest() {
 		Configuration conf = new Configuration();
 		conf.setBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED, true);
 
@@ -32,6 +36,48 @@ public class SchedulerChoiceTest extends TestLogger {
 
 		AbstractScheduler scheduler = (AbstractScheduler) t._2();
 
-		assertTrue(scheduler instanceof  GeoScheduler);
+		assertTrue(scheduler instanceof GeoScheduler);
+	}
+
+	/**
+	 * Tests that when the geo scheduling is enabled in config and the actor system is not passed the standard scheduler is instantiated
+	 * */
+	@Test
+	public void geoSchedulingChoiceNoActorTest() {
+		Configuration conf = new Configuration();
+		conf.setBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED, true);
+
+		Tuple10 t = JobManager.createJobManagerComponents(
+			conf,
+			TestingUtils.defaultExecutor(),
+			TestingUtils.defaultExecutor(),
+			new VoidBlobStore(),
+			NoOpMetricRegistry.INSTANCE,
+			null);
+
+		AbstractScheduler scheduler = (AbstractScheduler) t._2();
+
+		assertTrue(scheduler instanceof Scheduler);
+	}
+
+	/**
+	 * Tests that when the geo scheduling is disabled in config the standard scheduler is instantiated
+	 * */
+	@Test
+	public void standardSchedulingChoiceTest() {
+		Configuration conf = new Configuration();
+		conf.setBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED, false);
+
+		Tuple10 t = JobManager.createJobManagerComponents(
+			conf,
+			TestingUtils.defaultExecutor(),
+			TestingUtils.defaultExecutor(),
+			new VoidBlobStore(),
+			NoOpMetricRegistry.INSTANCE,
+			null);
+
+		AbstractScheduler scheduler = (AbstractScheduler) t._2();
+
+		assertTrue(scheduler instanceof Scheduler);
 	}
 }
