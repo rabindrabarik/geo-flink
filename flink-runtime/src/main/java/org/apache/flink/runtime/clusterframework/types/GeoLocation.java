@@ -3,10 +3,6 @@ package org.apache.flink.runtime.clusterframework.types;
 public class GeoLocation {
 	public static GeoLocation UNKNOWN = new GeoLocation("UNKNOWN");
 
-	public static GeoLocation create(String geoLocationName) {
-		return new GeoLocation(geoLocationName);
-	}
-
 	private String geoLocationName;
 
 	public GeoLocation(String geoLocationName) {

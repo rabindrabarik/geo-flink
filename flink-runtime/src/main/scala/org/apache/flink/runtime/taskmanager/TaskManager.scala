@@ -2031,7 +2031,7 @@ object TaskManager {
 
     val taskManagerConfiguration = TaskManagerConfiguration.fromConfiguration(configuration)
 
-    val geoLocation = GeoLocation.create(configuration.getString("geo-location", "UNKNOWN"))
+    val geoLocation = new GeoLocation(configuration.getString("geo-location", "UNKNOWN"))
 
     val taskManagerServices = TaskManagerServices.fromConfiguration(
       taskManagerServicesConfiguration,
