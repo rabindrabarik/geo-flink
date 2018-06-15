@@ -38,7 +38,7 @@ import org.apache.flink.runtime.instance.InstanceManager
 import org.apache.flink.runtime.io.disk.iomanager.IOManager
 import org.apache.flink.runtime.io.network.NetworkEnvironment
 import org.apache.flink.runtime.io.network.netty.NettyConfig
-import org.apache.flink.runtime.jobmanager.scheduler.{AbstractScheduler, Scheduler}
+import org.apache.flink.runtime.jobmanager.scheduler.Scheduler
 import org.apache.flink.runtime.jobmanager.{JobManager, MemoryArchivist, SubmittedJobGraphStore}
 import org.apache.flink.runtime.jobmaster.JobMaster
 import org.apache.flink.runtime.leaderelection.LeaderElectionService
@@ -274,23 +274,23 @@ class LocalFlinkMiniCluster(
   }
 
   def getJobManagerProps(
-      jobManagerClass: Class[_ <: JobManager],
-      configuration: Configuration,
-      futureExecutor: ScheduledExecutorService,
-      ioExecutor: Executor,
-      instanceManager: InstanceManager,
-      scheduler: AbstractScheduler,
-      blobServer: BlobServer,
-      libraryCacheManager: BlobLibraryCacheManager,
-      archive: ActorRef,
-      restartStrategyFactory: RestartStrategyFactory,
-      timeout: FiniteDuration,
-      leaderElectionService: LeaderElectionService,
-      submittedJobGraphStore: SubmittedJobGraphStore,
-      checkpointRecoveryFactory: CheckpointRecoveryFactory,
-      jobRecoveryTimeout: FiniteDuration,
-      jobManagerMetricGroup: JobManagerMetricGroup,
-      optRestAddress: Option[String])
+                          jobManagerClass: Class[_ <: JobManager],
+                          configuration: Configuration,
+                          futureExecutor: ScheduledExecutorService,
+                          ioExecutor: Executor,
+                          instanceManager: InstanceManager,
+                          scheduler: Scheduler,
+                          blobServer: BlobServer,
+                          libraryCacheManager: BlobLibraryCacheManager,
+                          archive: ActorRef,
+                          restartStrategyFactory: RestartStrategyFactory,
+                          timeout: FiniteDuration,
+                          leaderElectionService: LeaderElectionService,
+                          submittedJobGraphStore: SubmittedJobGraphStore,
+                          checkpointRecoveryFactory: CheckpointRecoveryFactory,
+                          jobRecoveryTimeout: FiniteDuration,
+                          jobManagerMetricGroup: JobManagerMetricGroup,
+                          optRestAddress: Option[String])
     : Props = {
 
     JobManager.getJobManagerProps(

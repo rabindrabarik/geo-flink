@@ -6,9 +6,6 @@ import org.apache.flink.configuration.JobManagerOptions;
 import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.blob.VoidBlobStore;
 import org.apache.flink.runtime.jobmanager.JobManager;
-import org.apache.flink.runtime.jobmanager.scheduler.AbstractScheduler;
-import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
-import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
 import org.apache.flink.runtime.metrics.NoOpMetricRegistry;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.util.TestLogger;
@@ -35,7 +32,7 @@ public class SchedulerChoiceTest extends TestLogger {
 			NoOpMetricRegistry.INSTANCE,
 			AkkaUtils.createLocalActorSystem(new Configuration()));
 
-		AbstractScheduler scheduler = (AbstractScheduler) t._2();
+		Scheduler scheduler = (Scheduler) t._2();
 
 		assertTrue(scheduler instanceof GeoScheduler);
 	}
@@ -56,7 +53,7 @@ public class SchedulerChoiceTest extends TestLogger {
 			NoOpMetricRegistry.INSTANCE,
 			null);
 
-		AbstractScheduler scheduler = (AbstractScheduler) t._2();
+		Scheduler scheduler = (Scheduler) t._2();
 
 		assertTrue(scheduler instanceof Scheduler);
 	}
@@ -77,7 +74,7 @@ public class SchedulerChoiceTest extends TestLogger {
 			NoOpMetricRegistry.INSTANCE,
 			null);
 
-		AbstractScheduler scheduler = (AbstractScheduler) t._2();
+		Scheduler scheduler = (Scheduler) t._2();
 
 		assertTrue(scheduler instanceof Scheduler);
 	}

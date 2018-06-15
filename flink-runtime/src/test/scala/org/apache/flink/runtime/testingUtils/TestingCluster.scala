@@ -37,7 +37,7 @@ import org.apache.flink.runtime.execution.librarycache.BlobLibraryCacheManager
 import org.apache.flink.runtime.executiongraph.restart.RestartStrategyFactory
 import org.apache.flink.runtime.highavailability.{HighAvailabilityServices, HighAvailabilityServicesUtils}
 import org.apache.flink.runtime.instance.{ActorGateway, InstanceManager}
-import org.apache.flink.runtime.jobmanager.scheduler.{AbstractScheduler, Scheduler}
+import org.apache.flink.runtime.jobmanager.scheduler.Scheduler
 import org.apache.flink.runtime.jobmanager.{JobManager, MemoryArchivist, SubmittedJobGraphStore}
 import org.apache.flink.runtime.leaderelection.LeaderElectionService
 import org.apache.flink.runtime.messages.JobManagerMessages
@@ -105,23 +105,23 @@ class TestingCluster(
   override val memoryArchivistClass: Class[_ <: MemoryArchivist] = classOf[TestingMemoryArchivist]
 
   override def getJobManagerProps(
-       jobManagerClass: Class[_ <: JobManager],
-       configuration: Configuration,
-       futureExecutor: ScheduledExecutorService,
-       ioExecutor: Executor,
-       instanceManager: InstanceManager,
-       scheduler: AbstractScheduler,
-       blobServer: BlobServer,
-       libraryCacheManager: BlobLibraryCacheManager,
-       archive: ActorRef,
-       restartStrategyFactory: RestartStrategyFactory,
-       timeout: FiniteDuration,
-       leaderElectionService: LeaderElectionService,
-       submittedJobGraphStore: SubmittedJobGraphStore,
-       checkpointRecoveryFactory: CheckpointRecoveryFactory,
-       jobRecoveryTimeout: FiniteDuration,
-       jobManagerMetricGroup: JobManagerMetricGroup,
-       optRestAddress: Option[String]): Props = {
+                                   jobManagerClass: Class[_ <: JobManager],
+                                   configuration: Configuration,
+                                   futureExecutor: ScheduledExecutorService,
+                                   ioExecutor: Executor,
+                                   instanceManager: InstanceManager,
+                                   scheduler: Scheduler,
+                                   blobServer: BlobServer,
+                                   libraryCacheManager: BlobLibraryCacheManager,
+                                   archive: ActorRef,
+                                   restartStrategyFactory: RestartStrategyFactory,
+                                   timeout: FiniteDuration,
+                                   leaderElectionService: LeaderElectionService,
+                                   submittedJobGraphStore: SubmittedJobGraphStore,
+                                   checkpointRecoveryFactory: CheckpointRecoveryFactory,
+                                   jobRecoveryTimeout: FiniteDuration,
+                                   jobManagerMetricGroup: JobManagerMetricGroup,
+                                   optRestAddress: Option[String]): Props = {
 
     val props = super.getJobManagerProps(
       jobManagerClass,

@@ -56,7 +56,7 @@ import org.apache.flink.runtime.instance.{AkkaActorGateway, InstanceID, Instance
 import org.apache.flink.runtime.jobgraph.{JobGraph, JobStatus}
 import org.apache.flink.runtime.jobmanager.SubmittedJobGraphStore.SubmittedJobGraphListener
 import org.apache.flink.runtime.jobmanager.scheduler.{Scheduler => FlinkScheduler}
-import org.apache.flink.runtime.jobmanager.scheduler.{AbstractScheduler => FlinkAbstractScheduler}
+import org.apache.flink.runtime.jobmanager.scheduler.{Scheduler => FlinkAbstractScheduler}
 import org.apache.flink.runtime.jobmanager.scheduler.{GeoScheduler => FlinkGeoScheduler}
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway
 import org.apache.flink.runtime.jobmaster.JobMaster
