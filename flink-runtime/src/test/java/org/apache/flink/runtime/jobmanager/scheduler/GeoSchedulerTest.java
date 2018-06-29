@@ -75,6 +75,6 @@ public class GeoSchedulerTest {
 		}
 
 		assertEquals(scheduler.getAllInstancesByGeoLocation(), instancesByLoc);
-		assertEquals(scheduler.getAvailableSlotsByGeoLocation(), slotsByLoc);
+		assertEquals(scheduler.calculateAvailableSlotsByGeoLocation(), slotsByLoc);
 	}
 }

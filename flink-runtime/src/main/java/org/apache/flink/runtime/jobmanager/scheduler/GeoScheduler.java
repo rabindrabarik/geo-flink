@@ -85,7 +85,7 @@ public class GeoScheduler extends Scheduler {
 	/**
 	 * Note that, due to asynchrony, the value returned may not be completely accurate.
 	 */
-	public Map<GeoLocation, Integer> getAvailableSlotsByGeoLocation() {
+	public Map<GeoLocation, Integer> calculateAvailableSlotsByGeoLocation() {
 		Map<GeoLocation, Integer> out = new HashMap<>();
 
 		for (Map.Entry<GeoLocation, Set<Instance>> locationAndInstances : allInstancesByGeoLocation.entrySet()) {
