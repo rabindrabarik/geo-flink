@@ -24,17 +24,13 @@ public class GeoScheduler extends Scheduler {
 
 	private Map<GeoLocation, Set<Instance>> allInstancesByGeoLocation = new HashMap<>();
 
-	private MetricFetcher jobMetricFetcher;
-
 	/**
 	 * Creates a new scheduler.
 	 *
 	 * @param executor            the executor to run futures on
-	 * @param jobManagerRetriever a the gateway retriever for the job manager, for metrics retrieval
 	 */
-	public GeoScheduler(Executor executor, GatewayRetriever<JobManagerGateway> jobManagerRetriever, MetricQueryServiceRetriever queryServiceRetriever) {
+	public GeoScheduler(Executor executor) {
 		super(executor);
-		this.jobMetricFetcher = new MetricFetcher<>(jobManagerRetriever, queryServiceRetriever, executor, Time.milliseconds(1000L), Time.milliseconds(500L));
 	}
 
 	@Override
@@ -84,6 +80,30 @@ public class GeoScheduler extends Scheduler {
 			//TODO: maybe throw exception here?
 			return GeoLocation.UNKNOWN;
 		}
+	}
+
+	/**
+	 * Note that, due to asynchrony, the value returned may not be completely accurate.
+	 */
+	public Map<GeoLocation, Integer> getAvailableSlotsByGeoLocation() {
+		Map<GeoLocation, Integer> out = new HashMap<>();
+
+		for (Map.Entry<GeoLocation, Set<Instance>> locationAndInstances : allInstancesByGeoLocation.entrySet()) {
+			int slots = 0;
+
+			for (Instance instance : locationAndInstances.getValue()) {
+				slots += instance.getNumberOfAvailableSlots();
+			}
+
+			out.put(locationAndInstances.getKey(), slots);
+		}
+
+		return out;
+	}
+
+
+	public Map<GeoLocation, Set<Instance>> getAllInstancesByGeoLocation() {
+		return allInstancesByGeoLocation;
 	}
 
 	/**

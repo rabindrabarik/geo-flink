@@ -4,6 +4,7 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
 import org.apache.flink.runtime.blob.VoidBlobWriter;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionGraphBuilder;
 import org.apache.flink.runtime.instance.AckingDummyActorGateway;
@@ -31,7 +32,7 @@ public class SchedulingDecisionTest extends TestLogger {
 		Scheduler scheduler = new Scheduler(TestingUtils.queuedActionExecutionContext());
 
 		for (int i = 0; i < INSTANCE_NUMBER; i++) {
-			scheduler.newInstanceAvailable(SchedulerTestUtils.getRandomInstance(NUM_SLOTS, AckingDummyActorGateway.INSTANCE));
+			scheduler.newInstanceAvailable(SchedulerTestUtils.getRandomInstance(NUM_SLOTS, AckingDummyActorGateway.INSTANCE, GeoLocation.UNKNOWN));
 		}
 
 		JobGraph jobGraph = new JobGraph(new SimpleJobGraph().getVertices());

@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.jobmanager.scheduler;
 
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.executiongraph.Execution;
 import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
@@ -26,6 +27,7 @@ import org.apache.flink.runtime.executiongraph.ExecutionVertex;
 import org.apache.flink.runtime.instance.*;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway;
+import org.apache.flink.runtime.taskmanager.GeoTaskManagerLocation;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 
 import java.net.InetAddress;
@@ -51,10 +53,14 @@ public class SchedulerTestUtils {
 	// --------------------------------------------------------------------------------------------
 
 	public static Instance getRandomInstance(int numSlots) {
-		return getRandomInstance(numSlots, DummyActorGateway.INSTANCE);
+		return getRandomInstance(numSlots, DummyActorGateway.INSTANCE, GeoLocation.UNKNOWN);
 	}
 
-	public static Instance getRandomInstance(int numSlots, ActorGateway gateway) {
+	public static Instance getRandomInstance(int numSlots, GeoLocation location) {
+		return getRandomInstance(numSlots, DummyActorGateway.INSTANCE, location);
+	}
+
+	public static Instance getRandomInstance(int numSlots, ActorGateway gateway, GeoLocation location) {
 		if (numSlots <= 0) {
 			throw new IllegalArgumentException();
 		}
@@ -70,7 +76,7 @@ public class SchedulerTestUtils {
 		
 		int dataPort = port.getAndIncrement();
 		
-		TaskManagerLocation ci = new TaskManagerLocation(resourceID, address, dataPort);
+		TaskManagerLocation ci = new GeoTaskManagerLocation(resourceID, address, dataPort, location);
 		
 		final long GB = 1024L*1024*1024;
 		HardwareDescription resources = new HardwareDescription(4, 4*GB, 3*GB, 2*GB);
