@@ -140,4 +140,14 @@ class ProgrammedSlotProvider implements SlotProvider {
 		canceledSlotRequests.add(slotRequestId);
 		return CompletableFuture.completedFuture(Acknowledge.get());
 	}
+
+	@Override
+	public int getNumberOfAvailableSlots() {
+		return Integer.MAX_VALUE;
+	}
+
+	@Override
+	public int getTotalNumberOfSlots() {
+		return Integer.MAX_VALUE;
+	}
 }

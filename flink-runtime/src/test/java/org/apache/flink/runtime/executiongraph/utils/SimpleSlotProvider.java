@@ -142,4 +142,11 @@ public class SimpleSlotProvider implements SlotProvider, SlotOwner {
 			return slots.size();
 		}
 	}
+
+	@Override
+	public int getTotalNumberOfSlots() {
+		synchronized (lock) {
+			return slots.size() + allocatedSlots.size();
+		}
+	}
 }

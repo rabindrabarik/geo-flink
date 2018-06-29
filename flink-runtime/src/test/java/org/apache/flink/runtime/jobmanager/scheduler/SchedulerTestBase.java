@@ -58,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.flink.runtime.jobmanager.scheduler.SchedulerTestBase.SchedulerType.SCHEDULER;
@@ -194,6 +195,11 @@ public class SchedulerTestBase extends TestLogger {
 		}
 
 		@Override
+		public int getTotalNumberOfSlots() {
+			return scheduler.getTotalNumberOfSlots();
+		}
+
+		@Override
 		public int getNumberOfLocalizedAssignments() {
 			return scheduler.getNumberOfLocalizedAssignments();
 		}
@@ -307,6 +313,15 @@ public class SchedulerTestBase extends TestLogger {
 			try {
 				return slotPool.getNumberOfAvailableSlots().get();
 			} catch (Exception e) {
+				throw new RuntimeException("Should not have happened.", e);
+			}
+		}
+
+		@Override
+		public int getTotalNumberOfSlots() {
+			try {
+				return slotPool.getNumberOfAvailableSlots().get();
+			} catch (InterruptedException | ExecutionException e) {
 				throw new RuntimeException("Should not have happened.", e);
 			}
 		}

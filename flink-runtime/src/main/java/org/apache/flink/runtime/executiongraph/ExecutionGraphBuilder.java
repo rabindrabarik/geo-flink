@@ -75,6 +75,9 @@ public class ExecutionGraphBuilder {
 	public static final String PARALLELISM_AUTO_MAX_ERROR_MESSAGE =
 		"PARALLELISM_AUTO_MAX is no longer supported. Please specify a concrete value for the parallelism.";
 
+	/** This class is not supposed to be instantiated. */
+	private ExecutionGraphBuilder() {}
+
 	/**
 	 * Builds the ExecutionGraph from the JobGraph.
 	 * If a prior execution graph exists, the JobGraph will be attached. If no prior execution
@@ -179,6 +182,41 @@ public class ExecutionGraphBuilder {
 		executionGraph.setScheduleMode(jobGraph.getScheduleMode());
 		executionGraph.setQueuedSchedulingAllowed(jobGraph.getAllowQueuedScheduling());
 
+		setJsonPlan(jobGraph, log, executionGraph);
+
+		for (JobVertex jobVertex : jobGraph.getVertices()) {
+
+		}
+
+		// initialize the vertices that have a master initialization hook
+		// file output formats create directories here, input formats create splits
+
+		initMasterStart(jobGraph, classLoader, parallelismForAutoMax, log, jobName, jobId);
+
+		// topologically sort the job vertices and attach the graph to the existing one
+
+		List<JobVertex> sortedTopology = jobGraph.getVerticesSortedTopologicallyFromSources();
+		if (log.isDebugEnabled()) {
+			log.debug("Adding {} vertices from job graph {} ({}).", sortedTopology.size(), jobName, jobId);
+		}
+		executionGraph.attachJobGraph(sortedTopology);
+
+		if (log.isDebugEnabled()) {
+			log.debug("Successfully created execution graph from job graph {} ({}).", jobName, jobId);
+		}
+
+
+		// configure the state checkpointing
+		configureStateCheckpointing(jobGraph, jobManagerConfig, classLoader, recoveryFactory, metrics, log, jobId, executionGraph);
+
+
+		// create all the metrics for the Execution Graph
+		createMetrics(metrics, executionGraph);
+
+		return executionGraph;
+	}
+
+	private static void setJsonPlan(JobGraph jobGraph, Logger log, ExecutionGraph executionGraph) {
 		try {
 			executionGraph.setJsonPlan(JsonPlanGenerator.generatePlan(jobGraph));
 		}
@@ -187,10 +225,9 @@ public class ExecutionGraphBuilder {
 			// give the graph an empty plan
 			executionGraph.setJsonPlan("{}");
 		}
+	}
 
-		// initialize the vertices that have a master initialization hook
-		// file output formats create directories here, input formats create splits
-
+	private static void initMasterStart(JobGraph jobGraph, ClassLoader classLoader, int parallelismForAutoMax, Logger log, String jobName, JobID jobId) throws JobExecutionException {
 		final long initMasterStart = System.nanoTime();
 		log.info("Running initialization on master for job {} ({}).", jobName, jobId);
 
@@ -223,19 +260,9 @@ public class ExecutionGraphBuilder {
 
 		log.info("Successfully ran initialization on master in {} ms.",
 				(System.nanoTime() - initMasterStart) / 1_000_000);
+	}
 
-		// topologically sort the job vertices and attach the graph to the existing one
-		List<JobVertex> sortedTopology = jobGraph.getVerticesSortedTopologicallyFromSources();
-		if (log.isDebugEnabled()) {
-			log.debug("Adding {} vertices from job graph {} ({}).", sortedTopology.size(), jobName, jobId);
-		}
-		executionGraph.attachJobGraph(sortedTopology);
-
-		if (log.isDebugEnabled()) {
-			log.debug("Successfully created execution graph from job graph {} ({}).", jobName, jobId);
-		}
-
-		// configure the state checkpointing
+	private static void configureStateCheckpointing(JobGraph jobGraph, Configuration jobManagerConfig, ClassLoader classLoader, CheckpointRecoveryFactory recoveryFactory, MetricGroup metrics, Logger log, JobID jobId, ExecutionGraph executionGraph) throws JobExecutionException {
 		JobCheckpointingSettings snapshotSettings = jobGraph.getCheckpointingSettings();
 		if (snapshotSettings != null) {
 			List<ExecutionJobVertex> triggerVertices =
@@ -357,18 +384,18 @@ public class ExecutionGraphBuilder {
 				rootBackend,
 				checkpointStatsTracker);
 		}
+	}
 
-		// create all the metrics for the Execution Graph
-
+	private static void createMetrics(MetricGroup metrics, ExecutionGraph executionGraph) {
 		metrics.gauge(RestartTimeGauge.METRIC_NAME, new RestartTimeGauge(executionGraph));
 		metrics.gauge(DownTimeGauge.METRIC_NAME, new DownTimeGauge(executionGraph));
 		metrics.gauge(UpTimeGauge.METRIC_NAME, new UpTimeGauge(executionGraph));
 		metrics.gauge(NumberOfFullRestartsGauge.METRIC_NAME, new NumberOfFullRestartsGauge(executionGraph));
 
 		executionGraph.getFailoverStrategy().registerMetrics(metrics);
-
-		return executionGraph;
 	}
+
+	// ------------------------------------------------------------------------
 
 	private static List<ExecutionJobVertex> idToVertex(
 			List<JobVertexID> jobVertices, ExecutionGraph executionGraph) throws IllegalArgumentException {
@@ -387,9 +414,4 @@ public class ExecutionGraphBuilder {
 
 		return result;
 	}
-
-	// ------------------------------------------------------------------------
-
-	/** This class is not supposed to be instantiated. */
-	private ExecutionGraphBuilder() {}
 }

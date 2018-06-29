@@ -94,4 +94,19 @@ public interface SlotProvider {
 		SlotRequestId slotRequestId,
 		@Nullable SlotSharingGroupId slotSharingGroupId,
 		Throwable cause);
+
+	/**
+	 *
+	 * NOTE: In the presence of multi-threaded operations, this number may be inexact.
+	 *
+	 * If unknown, returns -1
+	 *
+	 * @return The number of empty slots, for tasks.
+	 */
+	int getNumberOfAvailableSlots();
+
+	/**
+	 * If unknown, returns -1
+	 * */
+	int getTotalNumberOfSlots();
 }

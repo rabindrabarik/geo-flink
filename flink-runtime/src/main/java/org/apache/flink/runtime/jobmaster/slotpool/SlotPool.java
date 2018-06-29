@@ -1611,6 +1611,16 @@ public class SlotPool extends RpcEndpoint implements SlotPoolGateway, AllocatedS
 				Throwable cause) {
 			return gateway.releaseSlot(slotRequestId, slotSharingGroupId, cause);
 		}
+
+		@Override
+		public int getNumberOfAvailableSlots() {
+			return -1;
+		}
+
+		@Override
+		public int getTotalNumberOfSlots() {
+			return -1;
+		}
 	}
 
 	// ------------------------------------------------------------------------

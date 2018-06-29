@@ -112,6 +112,12 @@ public class JobVertex implements java.io.Serializable {
 	 * to be included in the JSON plan */
 	private String resultOptimizerProperties;
 
+	/**
+	 * The amount of data this vertex will output, relative to the sum of its inputs. It's automatically
+	 * derived from the invokable class.
+	 * */
+	private double selectivity;
+
 	// --------------------------------------------------------------------------------------------
 
 	/**
@@ -235,6 +241,13 @@ public class JobVertex implements java.io.Serializable {
 		Preconditions.checkNotNull(invokable);
 		this.invokableClassName = invokable.getName();
 		this.isStoppable = StoppableTask.class.isAssignableFrom(invokable);
+
+		try {
+			//can call with null as it's a static field
+			this.selectivity = this.getInvokableClass(ClassLoader.getSystemClassLoader()).getDeclaredField("SELECTIVITY").getDouble(null);
+		} catch (IllegalAccessException | NoSuchFieldException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -435,6 +448,13 @@ public class JobVertex implements java.io.Serializable {
 		return coLocationGroup;
 	}
 
+	/**
+	 * Returns the selectivity of this vertex.
+	 * */
+	public double getSelectivity() {
+		return selectivity;
+	}
+
 	public void updateCoLocationGroup(CoLocationGroup group) {
 		this.coLocationGroup = group;
 	}
@@ -563,4 +583,5 @@ public class JobVertex implements java.io.Serializable {
 	public String toString() {
 		return this.name + " (" + this.invokableClassName + ')';
 	}
+
 }

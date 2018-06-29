@@ -684,6 +684,7 @@ public class Scheduler implements InstanceListener, SlotAvailabilityListener, Sl
 	 *
 	 * @return The number of empty slots, for tasks.
 	 */
+	@Override
 	public int getNumberOfAvailableSlots() {
 		int count = 0;
 
@@ -698,6 +699,7 @@ public class Scheduler implements InstanceListener, SlotAvailabilityListener, Sl
 		return count;
 	}
 
+	@Override
 	public int getTotalNumberOfSlots() {
 		int count = 0;
 

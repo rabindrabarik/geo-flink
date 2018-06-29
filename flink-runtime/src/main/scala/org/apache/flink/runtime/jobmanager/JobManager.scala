@@ -2507,17 +2507,9 @@ object JobManager {
 
       //choosing the type of scheduler
       if(configuration.getBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED)) {
-        if(actorSystem != null) {
           //geoscheduling
           val timeout = FutureUtils.toTime(AkkaUtils.getTimeout(configuration))
-          scheduler = new FlinkGeoScheduler(
-            ExecutionContext.fromExecutor(futureExecutor),
-            new AkkaJobManagerRetriever(actorSystem, timeout, 10, Time.milliseconds(50L)),
-            new AkkaQueryServiceRetriever(actorSystem, timeout))
-        } else {
-          LOG.error("Geo scheduling is enabled but no actor system passed, falling back to standard scheduling")
-          scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
-        }
+          scheduler = new FlinkGeoScheduler(ExecutionContext.fromExecutor(futureExecutor))
       } else {
         scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
       }
