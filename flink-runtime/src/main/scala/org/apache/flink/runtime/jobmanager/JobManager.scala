@@ -56,8 +56,6 @@ import org.apache.flink.runtime.instance.{AkkaActorGateway, InstanceID, Instance
 import org.apache.flink.runtime.jobgraph.{JobGraph, JobStatus}
 import org.apache.flink.runtime.jobmanager.SubmittedJobGraphStore.SubmittedJobGraphListener
 import org.apache.flink.runtime.jobmanager.scheduler.{Scheduler => FlinkScheduler}
-import org.apache.flink.runtime.jobmanager.scheduler.{Scheduler => FlinkAbstractScheduler}
-import org.apache.flink.runtime.jobmanager.scheduler.{GeoScheduler => FlinkGeoScheduler}
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway
 import org.apache.flink.runtime.jobmaster.JobMaster
 import org.apache.flink.runtime.leaderelection.{LeaderContender, LeaderElectionService}
@@ -126,7 +124,7 @@ class JobManager(
     protected val futureExecutor: ScheduledExecutorService,
     protected val ioExecutor: Executor,
     protected val instanceManager: InstanceManager,
-    protected val scheduler: FlinkAbstractScheduler,
+    protected val scheduler: FlinkScheduler,
     protected val blobServer: BlobServer,
     protected val libraryCacheManager: BlobLibraryCacheManager,
     protected val archive: ActorRef,
@@ -2425,7 +2423,7 @@ object JobManager {
       blobStore: BlobStore,
       metricRegistry: FlinkMetricRegistry) :
     (InstanceManager,
-      FlinkAbstractScheduler,
+      FlinkScheduler,
       BlobServer,
       BlobLibraryCacheManager,
       RestartStrategyFactory,
@@ -2457,7 +2455,7 @@ object JobManager {
       metricRegistry: FlinkMetricRegistry,
       actorSystem: ActorSystem) :
     (InstanceManager,
-      FlinkAbstractScheduler,
+      FlinkScheduler,
       BlobServer,
       BlobLibraryCacheManager,
       RestartStrategyFactory,
@@ -2497,7 +2495,7 @@ object JobManager {
 
     var blobServer: BlobServer = null
     var instanceManager: InstanceManager = null
-    var scheduler: FlinkAbstractScheduler = null
+    var scheduler: FlinkScheduler = null
     var libraryCacheManager: BlobLibraryCacheManager = null
 
     try {
@@ -2505,14 +2503,7 @@ object JobManager {
       blobServer.start()
       instanceManager = new InstanceManager()
 
-      //choosing the type of scheduler
-      if(configuration.getBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED)) {
-          //geoscheduling
-          val timeout = FutureUtils.toTime(AkkaUtils.getTimeout(configuration))
-          scheduler = new FlinkGeoScheduler(ExecutionContext.fromExecutor(futureExecutor))
-      } else {
-        scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
-      }
+      scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
 
       libraryCacheManager =
         new BlobLibraryCacheManager(
@@ -2714,7 +2705,7 @@ object JobManager {
     futureExecutor: ScheduledExecutorService,
     ioExecutor: Executor,
     instanceManager: InstanceManager,
-    scheduler: FlinkAbstractScheduler,
+    scheduler: FlinkScheduler,
     blobServer: BlobServer,
     libraryCacheManager: LibraryCacheManager,
     archive: ActorRef,

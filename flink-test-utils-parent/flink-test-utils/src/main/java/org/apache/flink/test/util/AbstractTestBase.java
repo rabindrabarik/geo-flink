@@ -62,20 +62,12 @@ public abstract class AbstractTestBase extends TestBaseUtils {
 
 	private static final int DEFAULT_PARALLELISM = 4;
 
-	private static final MiniClusterResource.MiniClusterType CLUSTER_TYPE = MiniClusterResource.MiniClusterType.LEGACY;
-
-	private static Configuration newNonGeoSchedulingConfiguration() {
-		Configuration ret = new Configuration();
-		ret.setBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED, false);
-		return ret;
-	}
-
 	@ClassRule
 	public static MiniClusterResource miniClusterResource = new MiniClusterResource(
 		new MiniClusterResource.MiniClusterResourceConfiguration(
-			newNonGeoSchedulingConfiguration(),
+			new Configuration(),
 			1,
-			DEFAULT_PARALLELISM), CLUSTER_TYPE);
+			DEFAULT_PARALLELISM));
 
 	@ClassRule
 	public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
