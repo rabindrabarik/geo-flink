@@ -20,9 +20,10 @@ package org.apache.flink.test.util;
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
+import org.apache.flink.test.util.MiniClusterResource;
+import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.testutils.category.LegacyAndNew;
 import org.apache.flink.util.FileUtils;
-
 import org.junit.ClassRule;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
@@ -58,22 +59,22 @@ import java.io.IOException;
  * </pre>
  */
 @Category(LegacyAndNew.class)
-public abstract class AbstractTestBase extends TestBaseUtils {
+public abstract class GeoAbstractTestBase extends TestBaseUtils {
 
 	private static final int DEFAULT_PARALLELISM = 4;
 
 	private static final MiniClusterResource.MiniClusterType CLUSTER_TYPE = MiniClusterResource.MiniClusterType.LEGACY;
 
-	private static Configuration newNonGeoSchedulingConfiguration() {
+	private static Configuration newGeoSchedulingConfiguration() {
 		Configuration ret = new Configuration();
-		ret.setBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED, false);
+		ret.setBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED, true);
 		return ret;
 	}
 
 	@ClassRule
 	public static MiniClusterResource miniClusterResource = new MiniClusterResource(
 		new MiniClusterResource.MiniClusterResourceConfiguration(
-			newNonGeoSchedulingConfiguration(),
+			newGeoSchedulingConfiguration(),
 			1,
 			DEFAULT_PARALLELISM), CLUSTER_TYPE);
 
