@@ -1,20 +1,13 @@
 package org.apache.flink.runtime.jobmanager.scheduler;
 
-import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
-import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
-import org.apache.flink.runtime.executiongraph.ExecutionVertex;
+import org.apache.flink.runtime.executiongraph.OptimisationProblemSolution;
 import org.apache.flink.runtime.instance.Instance;
-import org.apache.flink.runtime.jobgraph.JobEdge;
-import org.apache.flink.runtime.jobgraph.JobVertex;
-import org.apache.flink.runtime.jobmaster.JobManagerGateway;
-import org.apache.flink.runtime.rest.handler.legacy.metrics.MetricFetcher;
 import org.apache.flink.runtime.taskmanager.GeoTaskManagerLocation;
-import org.apache.flink.runtime.webmonitor.retriever.GatewayRetriever;
-import org.apache.flink.runtime.webmonitor.retriever.MetricQueryServiceRetriever;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 /**
@@ -23,6 +16,7 @@ import java.util.concurrent.Executor;
 public class GeoScheduler extends Scheduler {
 
 	private Map<GeoLocation, Set<Instance>> allInstancesByGeoLocation = new HashMap<>();
+	private Map<ExecutionGraph, OptimisationProblemSolution> solutions = new HashMap<>();
 
 	/**
 	 * Creates a new scheduler.
@@ -106,33 +100,8 @@ public class GeoScheduler extends Scheduler {
 		return allInstancesByGeoLocation;
 	}
 
-	/**
-	 * Prepare for scheduling an {@link ExecutionGraph} for execution. Each request to allocateSlot for an {@link ExecutionVertex}
-	 * in this {@link ExecutionGraph} will return the decided slot.
-	 */
-	public void prepareForScheduling(ExecutionGraph graph) {
-		Collection<JobVertex> vertices = new ArrayList<>();
-		Collection<JobEdge> edges = new ArrayList<>();
 
-		for (JobVertex vertex : vertices) {
-
-		}
-
-		for (JobEdge edge : edges) {
-
-		}
-
-		gatherJobVerticesAndEdges(graph.getVerticesTopologically(), vertices, edges);
-	}
-
-	private void gatherJobVerticesAndEdges(
-		Iterable<ExecutionJobVertex> executionJobVertices,
-		Collection<JobVertex> vertices,
-		Collection<JobEdge> edges) {
-		for (ExecutionJobVertex executionJobVertex : executionJobVertices) {
-			JobVertex vertex = executionJobVertex.getJobVertex();
-			vertices.add(vertex);
-			edges.addAll(vertex.getInputs());
-		}
+	public void provideGraphSolution(ExecutionGraph executionGraph, OptimisationProblemSolution solution) {
+		solutions.put(executionGraph, solution);
 	}
 }

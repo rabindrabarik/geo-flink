@@ -17,7 +17,7 @@ public class OptimisationModel {
 	private final GeoScheduler scheduler;
 
 	// Constants //
-	private final Set<JobVertex> vertices;
+	private final Iterable<JobVertex> vertices;
 	private final Set<GeoLocation> locations;
 	private final TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths;
 	private final Map<GeoLocation, Integer> slots;
@@ -39,7 +39,7 @@ public class OptimisationModel {
 	private double networkCostWeight;
 	private double executionTimeWeight;
 
-	public OptimisationModel(Set<JobVertex> vertices,
+	public OptimisationModel(Iterable<JobVertex> vertices,
 							 Set<GeoLocation> locations,
 							 Map<JobVertex, GeoLocation> placedVertices,
 							 TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths,
@@ -139,7 +139,7 @@ public class OptimisationModel {
 	}
 
 	private GRBQuadExpr makeNetworkCostExpression() {
-		GRBQuadExpr rhs = new GRBQuadExpr();
+		GRBQuadExpr expr = new GRBQuadExpr();
 
 		for (JobVertex vertex : vertices) {
 			if (!vertex.isInputVertex()) {
@@ -150,7 +150,7 @@ public class OptimisationModel {
 							//add to the network cost the edge, if source and destinations are not placed in the same site
 							if(!locationFrom.equals(locationTo)) {
 								//TODO: add edge weight
-								rhs.addTerm((1 / bandwidths.get(locationFrom, locationTo)), placement.get(vertex, locationTo), placement.get(jobEdge.getSource().getProducer(), locationFrom));
+								expr.addTerm((1 / bandwidths.get(locationFrom, locationTo)), placement.get(vertex, locationTo), placement.get(jobEdge.getSource().getProducer(), locationFrom));
 							}
 						}
 					}
@@ -158,16 +158,21 @@ public class OptimisationModel {
 			}
 		}
 
-		return rhs;
+		return expr;
 	}
 
 	private GRBLinExpr makeExecutionTimeExpression() {
-		GRBLinExpr rhs = new GRBLinExpr();
+		GRBLinExpr expr = new GRBLinExpr();
 		for (JobVertex vertex : vertices) {
 			//TODO add execution time
-			rhs.addTerm(vertex.getMaxParallelism(), parallelism.get(vertex));
+			expr.addTerm(vertex.getMaxParallelism(), parallelism.get(vertex));
 		}
-		return rhs;
+		return expr;
+	}
+
+	public OptimisationProblemSolution optimize() throws GRBException {
+		model.optimize();
+		return OptimisationProblemSolution.fromSolvedModel(model, placement, parallelism, executionTime, networkCost);
 	}
 
 }

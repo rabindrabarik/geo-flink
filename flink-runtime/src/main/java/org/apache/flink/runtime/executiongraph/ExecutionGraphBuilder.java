@@ -49,9 +49,11 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobgraph.jsonplan.JsonPlanGenerator;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
 import org.apache.flink.runtime.jobgraph.tasks.JobCheckpointingSettings;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.jobmaster.slotpool.SlotProvider;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.state.StateBackendLoader;
+import org.apache.flink.types.TwoKeysMultiMap;
 import org.apache.flink.util.DynamicCodeLoadingException;
 import org.apache.flink.util.SerializedValue;
 
@@ -193,7 +195,23 @@ public class ExecutionGraphBuilder {
 
 		initMasterStart(jobGraph, classLoader, parallelismForAutoMax, log, jobName, jobId);
 
+
+		if(slotProvider instanceof GeoScheduler) {
+			//giving the solution future to the scheduler
+			GeoScheduler geoScheduler = (GeoScheduler) slotProvider;
+			OptimisationProblem problem = new OptimisationProblem(jobGraph.getVertices(), new TwoKeysMultiMap<>(), geoScheduler);
+			problem.solve();
+			OptimisationProblemSolution solution = problem.getSolution();
+			geoScheduler.provideGraphSolution(executionGraph, solution);
+
+			//applying parallelism decisions
+			for (JobVertex jobVertex : jobGraph.getVertices()) {
+				jobVertex.setParallelism(solution.getParallelism().get(jobVertex));
+			}
+		}
+
 		// topologically sort the job vertices and attach the graph to the existing one
+		// here the ExecutionJobVertex and in turn the ExecutionVertex are created
 
 		List<JobVertex> sortedTopology = jobGraph.getVerticesSortedTopologicallyFromSources();
 		if (log.isDebugEnabled()) {
@@ -212,6 +230,7 @@ public class ExecutionGraphBuilder {
 
 		// create all the metrics for the Execution Graph
 		createMetrics(metrics, executionGraph);
+
 
 		return executionGraph;
 	}

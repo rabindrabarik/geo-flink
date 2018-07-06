@@ -27,7 +27,6 @@ import org.apache.flink.runtime.jobmaster.SlotRequestId;
 import org.apache.flink.runtime.messages.Acknowledge;
 
 import javax.annotation.Nullable;
-
 import java.util.concurrent.CompletableFuture;
 
 /**

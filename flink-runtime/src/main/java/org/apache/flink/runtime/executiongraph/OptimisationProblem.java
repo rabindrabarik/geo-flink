@@ -9,17 +9,17 @@ import org.apache.flink.types.TwoKeysMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 public class OptimisationProblem {
-	private Set<JobVertex> vertices;
+	private OptimisationProblemSolution solution;
+	private Iterable<JobVertex> vertices;
 	private Set<GeoLocation> locations;
 	TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths;
 	private Map<GeoLocation, Integer> slots;
 	private OptimisationModel model;
 	private GeoScheduler scheduler;
 
-	public OptimisationProblem(Set<JobVertex> vertices,
+	public OptimisationProblem(Iterable<JobVertex> vertices,
 							   TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths,
 							   GeoScheduler scheduler) {
 
@@ -28,6 +28,7 @@ public class OptimisationProblem {
 		this.slots = scheduler.calculateAvailableSlotsByGeoLocation();
 		this.bandwidths = bandwidths;
 		this.scheduler = scheduler;
+
 
 		try {
 			initialiseModel();
@@ -41,8 +42,19 @@ public class OptimisationProblem {
 		model = new OptimisationModel(vertices, locations, new HashMap<>(), bandwidths, slots, scheduler, 0.5d, 0.5d);
 	}
 
-	public CompletableFuture<OptimisationproblemSolution> solve() {
-		return null;
+	public void solve() {
+		try {
+			solution = model.optimize();
+		} catch (GRBException e) {
+			e.printStackTrace();
+		}
 	}
 
+	public boolean isSolved() {
+		return solution == null;
+	}
+
+	public OptimisationProblemSolution getSolution() {
+		return solution;
+	}
 }
