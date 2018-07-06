@@ -244,7 +244,7 @@ public class JobVertex implements java.io.Serializable {
 
 		try {
 			//can call with null as it's a static field
-			this.selectivity = this.getInvokableClass(ClassLoader.getSystemClassLoader()).getDeclaredField("SELECTIVITY").getDouble(null);
+			this.selectivity = invokable.getDeclaredField("SELECTIVITY").getDouble(null);
 		} catch (IllegalAccessException | NoSuchFieldException e) {
 			e.printStackTrace();
 		}

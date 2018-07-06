@@ -6,8 +6,10 @@ import org.apache.flink.runtime.executiongraph.OptimisationProblemSolution;
 import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.taskmanager.GeoTaskManagerLocation;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 /**

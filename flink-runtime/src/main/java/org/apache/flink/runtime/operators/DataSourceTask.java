@@ -59,6 +59,8 @@ import java.util.NoSuchElementException;
  */
 public class DataSourceTask<OT> extends AbstractInvokable {
 
+	public static double SELECTIVITY = 1d;
+
 	private static final Logger LOG = LoggerFactory.getLogger(DataSourceTask.class);
 
 	private List<RecordWriter<?>> eventualOutputs;

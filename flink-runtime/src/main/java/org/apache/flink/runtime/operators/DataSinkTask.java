@@ -57,6 +57,8 @@ import org.slf4j.LoggerFactory;
  */
 public class DataSinkTask<IT> extends AbstractInvokable {
 
+	public static double SELECTIVITY = 1d;
+
 	// Obtain DataSinkTask Logger
 	private static final Logger LOG = LoggerFactory.getLogger(DataSinkTask.class);
 
