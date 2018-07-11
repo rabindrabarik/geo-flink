@@ -236,6 +236,7 @@ class LocalFlinkMiniCluster(
       taskManagerAddress,
       localExecution)
 
+    //use fromConfigurationAndLocation to specify a location
     val taskManagerServices = TaskManagerServices.fromConfiguration(
       taskManagerServicesConfiguration,
       resourceID,

@@ -1,15 +1,24 @@
 package org.apache.flink.runtime.jobmanager.scheduler;
 
+import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
+import org.apache.flink.runtime.clusterframework.types.SlotProfile;
+import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.OptimisationProblemSolution;
 import org.apache.flink.runtime.instance.Instance;
-import org.apache.flink.runtime.taskmanager.GeoTaskManagerLocation;
+import org.apache.flink.runtime.instance.SimpleSlot;
+import org.apache.flink.runtime.jobgraph.JobVertex;
+import org.apache.flink.runtime.jobmaster.LogicalSlot;
+import org.apache.flink.runtime.jobmaster.SlotRequestId;
+import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 /**
@@ -70,12 +79,7 @@ public class GeoScheduler extends Scheduler {
 	}
 
 	private GeoLocation getInstanceLocation(Instance instance) {
-		if (instance.getTaskManagerLocation() instanceof GeoTaskManagerLocation) {
-			return ((GeoTaskManagerLocation) instance.getTaskManagerLocation()).getGeoLocation();
-		} else {
-			//TODO: maybe throw exception here?
-			return GeoLocation.UNKNOWN;
-		}
+			return instance.getTaskManagerLocation().getGeoLocation();
 	}
 
 	/**
@@ -97,13 +101,47 @@ public class GeoScheduler extends Scheduler {
 		return out;
 	}
 
+	@Override
+	public CompletableFuture<LogicalSlot> allocateSlot(SlotRequestId slotRequestId, ScheduledUnit task, boolean allowQueued, SlotProfile slotProfile, Time allocationTimeout) {
+		ExecutionGraph graph = task.getTaskToExecute().getVertex().getExecutionGraph();
+		OptimisationProblemSolution solution = solutions.get(graph);
+		if(solution == null) {
+			throw new IllegalArgumentException("Please solve the placement problem for this graph first");
+		}
+
+		JobVertex jobVertex = task.getTaskToExecute().getVertex().getJobVertex().getJobVertex();
+		GeoLocation whereToPlace = solution.getPlacement(jobVertex);
+		if(whereToPlace == null) {
+			throw new IllegalArgumentException("The placement for this job vertex was not found. This should never happen");
+		}
+
+		if(!allInstancesByGeoLocation.containsKey(whereToPlace)) {
+			return FutureUtils.completedExceptionally(new NoResourceAvailableException("The geo location specified in " +
+				"the placement problem's solution is unknown to this scheduler"));
+		}
+
+		ArrayList<TaskManagerLocation> locationsToPlaceIn = new ArrayList<>();
+
+		for (Instance instance : allInstancesByGeoLocation.get(whereToPlace)) {
+			locationsToPlaceIn.add(instance.getTaskManagerLocation());
+		}
+
+		SimpleSlot slotToUse = super.getFreeSlotForTask(task.getTaskToExecute().getVertex(), locationsToPlaceIn, true);
+
+		if(slotToUse == null) {
+			//we weren't able to schedule respecting the model solution, delegate to standard scheduler
+			return super.allocateSlot(slotRequestId, task, allowQueued, slotProfile, allocationTimeout);
+		}
+
+		return CompletableFuture.completedFuture(slotToUse);
+	}
 
 	public Map<GeoLocation, Set<Instance>> getAllInstancesByGeoLocation() {
 		return allInstancesByGeoLocation;
 	}
 
 
-	public void provideGraphSolution(ExecutionGraph executionGraph, OptimisationProblemSolution solution) {
+	public void addGraphSolution(ExecutionGraph executionGraph, OptimisationProblemSolution solution) {
 		solutions.put(executionGraph, solution);
 	}
 }

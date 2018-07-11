@@ -50,7 +50,10 @@ public class JobEdge implements java.io.Serializable {
 
 	/** Optional description of the caching inside an operator, to be displayed in the JSON plan */
 	private String operatorLevelCachingDescription;
-	
+
+	/** How much data will flow on this edge (relative to others) */
+	private double weight;
+
 	/**
 	 * Constructs a new job edge, that connects an intermediate result to a consumer task.
 	 * 
@@ -198,6 +201,15 @@ public class JobEdge implements java.io.Serializable {
 	 */
 	public void setOperatorLevelCachingDescription(String operatorLevelCachingDescription) {
 		this.operatorLevelCachingDescription = operatorLevelCachingDescription;
+	}
+
+
+	public double getWeight() {
+		return weight;
+	}
+
+	public void setWeight(double weight) {
+		this.weight = weight;
 	}
 
 	// --------------------------------------------------------------------------------------------

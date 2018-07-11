@@ -17,4 +17,15 @@ public class GeoLocation {
 	public String toString() {
 		return geoLocationName;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		} else if (o == null || o.getClass() != getClass()) {
+			return false;
+		} else {
+			return geoLocationName.equals(((GeoLocation) o).geoLocationName);
+		}
+	}
 }

@@ -6,14 +6,13 @@ import gurobi.GRBModel;
 import gurobi.GRBVar;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.jobgraph.JobVertex;
+import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.types.TwoKeysMap;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class OptimisationProblemSolution {
-	public static final int GRB_OPTIMAL_MODEL_STATUS = 3;
-	public static final int GRB_SUBOPTIMAL_MODEL_STATUS = 13;
 	private Map<JobVertex, GeoLocation> placement;
 	private Map<JobVertex, Integer> parallelism;
 	private double networkCost;
@@ -27,7 +26,7 @@ public class OptimisationProblemSolution {
 	}
 
 	public static OptimisationProblemSolution fromSolvedModel(GRBModel solvedModel, TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap, Map<JobVertex, GRBVar> parallelismVarMap, GRBVar executionTime, GRBVar networkCost) throws GRBException {
-		if (solvedModel.get(GRB.IntAttr.Status) != GRB_OPTIMAL_MODEL_STATUS && solvedModel.get(GRB.IntAttr.Status) != GRB_SUBOPTIMAL_MODEL_STATUS) {
+		if (solvedModel.get(GRB.IntAttr.Status) != GRB.Status.OPTIMAL && solvedModel.get(GRB.IntAttr.Status) != GRB.Status.SUBOPTIMAL) {
 			throw new IllegalArgumentException("Solve the model first");
 		}
 
@@ -55,13 +54,17 @@ public class OptimisationProblemSolution {
 		return parallelism;
 	}
 
-	public Map<JobVertex, GeoLocation> getPlacement() {
+	public Map<JobVertex, GeoLocation> getPlacementMap() {
 		return placement;
 	}
 
-	public Map<JobVertex, Integer> getParallelism() {
+	public Map<JobVertex, Integer> getParallelismMap() {
 		return parallelism;
 	}
+
+	public GeoLocation getPlacement(JobVertex vertex) {return placement.get(vertex);}
+
+	public Integer getParallelism(JobVertex vertex) {return parallelism.get(vertex);}
 
 	public double getNetworkCost() {
 		return networkCost;
@@ -69,5 +72,18 @@ public class OptimisationProblemSolution {
 
 	public double getExecutionTime() {
 		return executionTime;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder out = new StringBuilder("\n");
+
+		out.append("\n\n PLACEMENT:");
+		out.append(GRBUtils.mapToString(placement));
+
+		out.append("\n\n PARALLELISM:");
+		out.append(GRBUtils.mapToString(parallelism));
+
+		return out.toString();
 	}
 }

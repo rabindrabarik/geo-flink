@@ -20,12 +20,12 @@ package org.apache.flink.test.util;
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
-import org.apache.flink.test.util.MiniClusterResource;
-import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.testutils.category.LegacyAndNew;
 import org.apache.flink.util.FileUtils;
+
 import org.junit.ClassRule;
 import org.junit.experimental.categories.Category;
+
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
@@ -75,7 +75,7 @@ public abstract class GeoAbstractTestBase extends TestBaseUtils {
 	public static MiniClusterResource miniClusterResource = new MiniClusterResource(
 		new MiniClusterResource.MiniClusterResourceConfiguration(
 			newGeoSchedulingConfiguration(),
-			1,
+			4,
 			DEFAULT_PARALLELISM), CLUSTER_TYPE);
 
 	@ClassRule

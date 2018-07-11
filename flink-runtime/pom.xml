@@ -300,6 +300,15 @@ under the License.
 			<artifactId>reflections</artifactId>
 		</dependency>
 
+		<!-- TODO: make this general -->
+		<dependency>
+			<groupId>com.gurobi</groupId>
+			<artifactId>gurobi</artifactId>
+			<version>8.0</version>
+			<scope>system</scope>
+			<systemPath>/home/requiel/gitRepo/flink/gurobi/gurobi.jar</systemPath>
+		</dependency>
+
 	</dependencies>
 
 	<!-- Dependency Management to converge transitive dependency versions -->

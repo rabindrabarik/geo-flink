@@ -38,7 +38,7 @@ import java.util.List;
 @Internal
 public class TwoInputStreamTask<IN1, IN2, OUT> extends StreamTask<OUT, TwoInputStreamOperator<IN1, IN2, OUT>> {
 
-	public static double SELECTIVITY = 0.5;
+	public static double selectivity = 0.5;
 
 	private StreamTwoInputProcessor<IN1, IN2> inputProcessor;
 

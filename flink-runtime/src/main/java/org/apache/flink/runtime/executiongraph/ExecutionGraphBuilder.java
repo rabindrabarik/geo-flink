@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.executiongraph;
 
+import gurobi.GRBException;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.time.Time;
@@ -53,17 +54,17 @@ import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.jobmaster.slotpool.SlotProvider;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.state.StateBackendLoader;
+import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.types.TwoKeysMultiMap;
 import org.apache.flink.util.DynamicCodeLoadingException;
 import org.apache.flink.util.SerializedValue;
-
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
@@ -186,27 +187,53 @@ public class ExecutionGraphBuilder {
 
 		setJsonPlan(jobGraph, log, executionGraph);
 
-		for (JobVertex jobVertex : jobGraph.getVertices()) {
-
-		}
-
 		// initialize the vertices that have a master initialization hook
 		// file output formats create directories here, input formats create splits
 
 		initMasterStart(jobGraph, classLoader, parallelismForAutoMax, log, jobName, jobId);
 
 
-		if(slotProvider instanceof GeoScheduler) {
-			//giving the solution future to the scheduler
+		if (slotProvider instanceof GeoScheduler) {
 			GeoScheduler geoScheduler = (GeoScheduler) slotProvider;
-			OptimisationProblem problem = new OptimisationProblem(jobGraph.getVertices(), new TwoKeysMultiMap<>(), geoScheduler);
-			problem.solve();
-			OptimisationProblemSolution solution = problem.getSolution();
-			geoScheduler.provideGraphSolution(executionGraph, solution);
 
-			//applying parallelism decisions
-			for (JobVertex jobVertex : jobGraph.getVertices()) {
-				jobVertex.setParallelism(solution.getParallelism().get(jobVertex));
+			//creating and solving the model
+			OptimisationModel model;
+			try {
+				model = new OptimisationModel(
+					jobGraph.getVerticesSortedTopologicallyFromSources(),
+					geoScheduler.getAllInstancesByGeoLocation().keySet(),
+					new HashMap<>(),
+					new TwoKeysMultiMap<>(),
+					geoScheduler.calculateAvailableSlotsByGeoLocation(),
+					geoScheduler,
+					0.5d,
+					-0.5d);
+
+				OptimisationProblemSolution solution = model.optimize();
+
+				System.out.println("\n------------------------------");
+				System.out.println("Available slots:");
+				System.out.println(GRBUtils.mapToString(geoScheduler.calculateAvailableSlotsByGeoLocation()));
+				System.out.println("------------------------------\n");
+
+
+				System.out.println("\n------------------------------");
+				System.out.println("Model hard solution" + model.solutionString());
+				System.out.println("------------------------------\n");
+
+				System.out.println("\n------------------------------");
+				System.out.println("Model soft solution" + solution.toString());
+				System.out.println("------------------------------\n");
+
+				//giving the solution future to the scheduler
+				geoScheduler.addGraphSolution(executionGraph, solution);
+
+				//applying parallelism decisions
+				for (JobVertex jobVertex : jobGraph.getVertices()) {
+					jobVertex.setParallelism(solution.getParallelism(jobVertex));
+				}
+			} catch (GRBException e) {
+				e.printStackTrace();
 			}
 		}
 

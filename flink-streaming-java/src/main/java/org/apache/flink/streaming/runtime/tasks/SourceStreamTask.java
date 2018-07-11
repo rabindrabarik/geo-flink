@@ -45,7 +45,7 @@ import org.apache.flink.util.FlinkException;
 public class SourceStreamTask<OUT, SRC extends SourceFunction<OUT>, OP extends StreamSource<OUT, SRC>>
 	extends StreamTask<OUT, OP> {
 
-	public static double SELECTIVITY = 1d;
+	public static double selectivity = 1d;
 
 	private volatile boolean externallyInducedCheckpoints;
 

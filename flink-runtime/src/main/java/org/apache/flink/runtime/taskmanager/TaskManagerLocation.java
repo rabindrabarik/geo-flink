@@ -20,6 +20,7 @@ package org.apache.flink.runtime.taskmanager;
 
 import java.net.InetAddress;
 
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.util.NetUtils;
 
@@ -64,6 +65,9 @@ public class TaskManagerLocation implements Comparable<TaskManagerLocation>, jav
 	/** The toString representation, eagerly constructed and cached to avoid repeated string building */  
 	private final String stringRepresentation;
 
+
+	private final GeoLocation geoLocation;
+
 	/**
 	 * Constructs a new instance connection info object. The constructor will attempt to retrieve the instance's
 	 * host name and domain name through the operating system's lookup mechanisms.
@@ -74,6 +78,10 @@ public class TaskManagerLocation implements Comparable<TaskManagerLocation>, jav
 	 *        the port instance's task manager expects to receive transfer envelopes on
 	 */
 	public TaskManagerLocation(ResourceID resourceID, InetAddress inetAddress, int dataPort) {
+		this(resourceID, inetAddress, dataPort, GeoLocation.UNKNOWN);
+	}
+
+	public TaskManagerLocation(ResourceID resourceID, InetAddress inetAddress, int dataPort, GeoLocation geoLocation) {
 		// -1 indicates a local instance connection info
 		checkArgument(dataPort > 0 || dataPort == -1, "dataPort must be > 0, or -1 (local)");
 
@@ -109,6 +117,8 @@ public class TaskManagerLocation implements Comparable<TaskManagerLocation>, jav
 
 		this.stringRepresentation = String.format(
 				"%s @ %s (dataPort=%d)", resourceID, fqdnHostName, dataPort);
+
+		this.geoLocation = geoLocation;
 	}
 
 	// ------------------------------------------------------------------------
@@ -185,6 +195,11 @@ public class TaskManagerLocation implements Comparable<TaskManagerLocation>, jav
 		return hostName;
 	}
 
+
+	public GeoLocation getGeoLocation() {
+		return geoLocation;
+	}
+
 	// --------------------------------------------------------------------------------------------
 	// Utilities
 	// --------------------------------------------------------------------------------------------
@@ -203,7 +218,8 @@ public class TaskManagerLocation implements Comparable<TaskManagerLocation>, jav
 			TaskManagerLocation that = (TaskManagerLocation) obj;
 			return this.resourceID.equals(that.resourceID) &&
 					this.inetAddress.equals(that.inetAddress) &&
-					this.dataPort == that.dataPort;
+					this.dataPort == that.dataPort &&
+					this.geoLocation == that.geoLocation;
 		}
 		else {
 			return false;
@@ -219,6 +235,7 @@ public class TaskManagerLocation implements Comparable<TaskManagerLocation>, jav
 
 	@Override
 	public int compareTo(@Nonnull TaskManagerLocation o) {
+
 		// decide based on resource ID first
 		int resourceIdCmp = this.resourceID.getResourceIdString().compareTo(o.resourceID.getResourceIdString());
 		if (resourceIdCmp != 0) {

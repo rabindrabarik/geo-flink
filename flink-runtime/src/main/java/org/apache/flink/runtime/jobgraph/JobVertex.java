@@ -71,6 +71,9 @@ public class JobVertex implements java.io.Serializable {
 	/** Maximum number of subtasks to split this task into a runtime. */
 	private int maxParallelism = -1;
 
+	/** How computational intensive this job is (relative to others) */
+	private double weight = 1;
+
 	/** The minimum resource of the vertex */
 	private ResourceSpec minResources = ResourceSpec.DEFAULT;
 
@@ -244,7 +247,7 @@ public class JobVertex implements java.io.Serializable {
 
 		try {
 			//can call with null as it's a static field
-			this.selectivity = invokable.getDeclaredField("SELECTIVITY").getDouble(null);
+			this.selectivity = invokable.getDeclaredField("selectivity").getDouble(null);
 		} catch (IllegalAccessException | NoSuchFieldException e) {
 			e.printStackTrace();
 		}
@@ -312,6 +315,15 @@ public class JobVertex implements java.io.Serializable {
 	 */
 	public int getMaxParallelism() {
 		return maxParallelism;
+	}
+
+
+	public double getWeight() {
+		return weight;
+	}
+
+	public void setWeight(double weight) {
+		this.weight = weight;
 	}
 
 	/**
