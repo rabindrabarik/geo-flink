@@ -1,11 +1,8 @@
 package org.apache.flink.runtime.jobmanager.scheduler.TestJobGraphs;
 
-import com.sun.tools.javac.code.Attribute;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSet;
 import org.apache.flink.runtime.jobgraph.JobVertex;
-import org.apache.flink.runtime.operators.testutils.DummyEnvironment;
-import org.apache.hadoop.mapreduce.Job;
 
 import java.util.ArrayList;
 import java.util.HashSet;

@@ -10,6 +10,8 @@ import org.apache.flink.runtime.executiongraph.ExecutionGraphBuilder;
 import org.apache.flink.runtime.instance.AckingDummyActorGateway;
 import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.Spies.SchedulingDecisionSpy;
+import org.apache.flink.runtime.jobmanager.scheduler.Spies.SpyableFlinkScheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.TestJobGraphs.SimpleJobGraph;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.util.TestLogger;
@@ -29,7 +31,11 @@ public class SchedulingDecisionTest extends TestLogger {
 
 	@Test
 	public void simpleJobGraphTest() throws Exception {
-		Scheduler scheduler = new Scheduler(TestingUtils.queuedActionExecutionContext());
+		Scheduler scheduler = new SpyableFlinkScheduler(TestingUtils.queuedActionExecutionContext());
+
+		SchedulingDecisionSpy spy = new SchedulingDecisionSpy();
+
+		((SpyableFlinkScheduler) scheduler).addSchedulingDecisionSpy(spy);
 
 		for (int i = 0; i < INSTANCE_NUMBER; i++) {
 			scheduler.newInstanceAvailable(SchedulerTestUtils.getRandomInstance(NUM_SLOTS, AckingDummyActorGateway.INSTANCE, GeoLocation.UNKNOWN));

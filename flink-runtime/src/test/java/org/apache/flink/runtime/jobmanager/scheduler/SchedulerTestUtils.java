@@ -27,7 +27,6 @@ import org.apache.flink.runtime.executiongraph.ExecutionVertex;
 import org.apache.flink.runtime.instance.*;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway;
-import org.apache.flink.runtime.taskmanager.GeoTaskManagerLocation;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 
 import java.net.InetAddress;
@@ -76,7 +75,7 @@ public class SchedulerTestUtils {
 		
 		int dataPort = port.getAndIncrement();
 		
-		TaskManagerLocation ci = new GeoTaskManagerLocation(resourceID, address, dataPort, location);
+		TaskManagerLocation ci = new TaskManagerLocation(resourceID, address, dataPort, location);
 		
 		final long GB = 1024L*1024*1024;
 		HardwareDescription resources = new HardwareDescription(4, 4*GB, 3*GB, 2*GB);
