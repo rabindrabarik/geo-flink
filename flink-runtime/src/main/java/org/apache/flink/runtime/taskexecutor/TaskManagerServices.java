@@ -47,7 +47,6 @@ import org.apache.flink.runtime.state.LocalRecoveryConfig;
 import org.apache.flink.runtime.state.TaskExecutorLocalStateStoresManager;
 import org.apache.flink.runtime.taskexecutor.slot.TaskSlotTable;
 import org.apache.flink.runtime.taskexecutor.slot.TimerService;
-import org.apache.flink.runtime.taskmanager.GeoTaskManagerLocation;
 import org.apache.flink.runtime.taskmanager.NetworkEnvironmentConfiguration;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.util.ExceptionUtils;
@@ -229,7 +228,7 @@ public class TaskManagerServices {
 		final NetworkEnvironment network = createNetworkEnvironment(taskManagerServicesConfiguration, maxJvmHeapMemory);
 		network.start();
 
-		final TaskManagerLocation taskManagerLocation = new GeoTaskManagerLocation(
+		final TaskManagerLocation taskManagerLocation = new TaskManagerLocation(
 			resourceID,
 			taskManagerServicesConfiguration.getTaskManagerAddress(),
 			network.getConnectionManager().getDataPort(),
@@ -273,7 +272,8 @@ public class TaskManagerServices {
 		final TaskManagerLocation taskManagerLocation = new TaskManagerLocation(
 			resourceID,
 			taskManagerServicesConfiguration.getTaskManagerAddress(),
-			network.getConnectionManager().getDataPort());
+			network.getConnectionManager().getDataPort(),
+			new GeoLocation(resourceID.getResourceIdString()));
 
 		return fromConfigurationAndLocation(
 			taskManagerServicesConfiguration,
@@ -287,7 +287,7 @@ public class TaskManagerServices {
 
 	}
 
-	private static TaskManagerServices fromConfigurationAndLocation(
+	public static TaskManagerServices fromConfigurationAndLocation(
 			TaskManagerServicesConfiguration taskManagerServicesConfiguration,
 			ResourceID resourceID,
 			Executor taskIOExecutor,
