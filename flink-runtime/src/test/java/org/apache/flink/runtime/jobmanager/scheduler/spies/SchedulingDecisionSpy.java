@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler.Spies;
+package org.apache.flink.runtime.jobmanager.scheduler.spies;
 
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.executiongraph.ExecutionEdge;

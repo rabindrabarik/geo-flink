@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler.TestJobGraphs;
+package org.apache.flink.runtime.jobmanager.scheduler.jobGraphs;
 
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
@@ -44,7 +44,7 @@ public class SimpleJobGraph {
 		reduce = new JobVertex("reduce");
 
 		for (JobVertex m : maps) {
-			reduce.connectNewDataSetAsInput(m, DistributionPattern.POINTWISE, ResultPartitionType.PIPELINED);
+			reduce.connectNewDataSetAsInput(m, DistributionPattern.ALL_TO_ALL, ResultPartitionType.PIPELINED);
 		}
 
 		vertices.addAll(inputs);

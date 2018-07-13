@@ -6,8 +6,6 @@ import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobmanager.scheduler.SchedulerTestUtils;
-import org.apache.flink.runtime.jobmanager.scheduler.SchedulingDecisionTestFramework;
-import org.apache.flink.runtime.jobmanager.scheduler.Spies.SchedulingDecisionSpy;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,13 +17,13 @@ import static org.apache.flink.runtime.jobmanager.scheduler.SchedulerTestUtils.m
 
 /**
  * This test tests the assumption that the n_th ExecutionEdge[] (index inputNumber) contains edges from the n_th input to the JobVertex.
- * It is necessary for {@link SchedulingDecisionSpy}::calculateNetworkCost
+ * It is necessary for SchedulingDecisionSpy::calculateNetworkCost
  */
 public class ExecutionEdgeIndexingTest {
 	JobVertex[] vertices;
 	ExecutionGraph executionGraph;
 
-	private final static Logger log = LoggerFactory.getLogger(SchedulingDecisionTestFramework.class);
+	private final static Logger log = LoggerFactory.getLogger(ExecutionEdgeIndexingTest.class);
 
 	@Before
 	public void setup() throws JobException, JobExecutionException {

@@ -4,8 +4,9 @@ import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
-import org.apache.flink.runtime.jobmanager.scheduler.TestInstanceSets.CentralAndEdgeInstanceSet;
-import org.apache.flink.runtime.jobmanager.scheduler.TestJobGraphs.SimpleJobGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.instanceSets.CentralAndEdgeInstanceSet;
+import org.apache.flink.runtime.jobmanager.scheduler.jobGraphs.SimpleJobGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.schedulingDecisionFramework.SchedulingDecisionTestFramework;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -14,8 +15,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class NetworkSpeedTradeoffSchedulingDecisionTest extends SchedulingDecisionTestFramework {
-	private final SimpleJobGraph jobGraph = new SimpleJobGraph(4);
-	private final CentralAndEdgeInstanceSet instances = new CentralAndEdgeInstanceSet(4, 500, 1);
+	private final SimpleJobGraph jobGraph = new SimpleJobGraph(40);
+	private final CentralAndEdgeInstanceSet instances = new CentralAndEdgeInstanceSet(40, 20, 2);
 	private final Map<JobVertex, GeoLocation> placedVertices;
 
 	public NetworkSpeedTradeoffSchedulingDecisionTest() {

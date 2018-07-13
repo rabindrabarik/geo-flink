@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler.TestInstanceSets;
+package org.apache.flink.runtime.jobmanager.scheduler.instanceSets;
 
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.instance.AckingDummyActorGateway;

@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler;
+package org.apache.flink.runtime.jobmanager.scheduler.schedulingDecisionFramework;
 
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
@@ -6,11 +6,12 @@ import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.ScheduleMode;
-import org.apache.flink.runtime.jobmanager.scheduler.Spies.SchedulingDecisionSpy;
-import org.apache.flink.runtime.jobmanager.scheduler.Spies.SpyableFlinkScheduler;
-import org.apache.flink.runtime.jobmanager.scheduler.Spies.SpyableGeoScheduler;
-import org.apache.flink.runtime.jobmanager.scheduler.Spies.SpyableScheduler;
-import org.apache.flink.runtime.jobmanager.scheduler.TestJobGraphs.SimpleJobGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.jobGraphs.SimpleJobGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.spies.SchedulingDecisionSpy;
+import org.apache.flink.runtime.jobmanager.scheduler.spies.SpyableFlinkScheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.spies.SpyableGeoScheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.spies.SpyableScheduler;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.util.TestLogger;
 import org.junit.Ignore;

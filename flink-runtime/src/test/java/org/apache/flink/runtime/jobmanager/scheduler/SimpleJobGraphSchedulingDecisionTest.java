@@ -4,7 +4,8 @@ import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.instance.AckingDummyActorGateway;
 import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.jobgraph.JobGraph;
-import org.apache.flink.runtime.jobmanager.scheduler.TestJobGraphs.SimpleJobGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.jobGraphs.SimpleJobGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.schedulingDecisionFramework.SchedulingDecisionTestFramework;
 
 import java.util.HashSet;
 import java.util.Set;

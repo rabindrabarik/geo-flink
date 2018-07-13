@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler.TestJobGraphs;
+package org.apache.flink.runtime.jobmanager.scheduler.invokables;
 
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;

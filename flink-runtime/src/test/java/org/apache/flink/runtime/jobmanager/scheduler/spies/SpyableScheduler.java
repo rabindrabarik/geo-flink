@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler.Spies;
+package org.apache.flink.runtime.jobmanager.scheduler.spies;
 
 public interface SpyableScheduler {
 

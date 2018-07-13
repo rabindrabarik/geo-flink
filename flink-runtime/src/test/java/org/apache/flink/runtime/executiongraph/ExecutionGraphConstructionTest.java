@@ -18,23 +18,27 @@
 
 package org.apache.flink.runtime.executiongraph;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.JobID;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.core.io.InputSplit;
+import org.apache.flink.core.io.InputSplitAssigner;
+import org.apache.flink.core.io.InputSplitSource;
+import org.apache.flink.runtime.JobException;
 import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.executiongraph.restart.NoRestartStrategy;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
+import org.apache.flink.runtime.jobgraph.DistributionPattern;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSet;
+import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
+import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
+import org.apache.flink.runtime.jobmanager.scheduler.CoLocationConstraint;
 import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.util.SerializedValue;
-
 import org.junit.Test;
 import org.mockito.Matchers;
 
@@ -45,19 +49,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.core.io.InputSplit;
-import org.apache.flink.core.io.InputSplitAssigner;
-import org.apache.flink.core.io.InputSplitSource;
-import org.apache.flink.runtime.JobException;
-import org.apache.flink.runtime.jobgraph.JobVertex;
-import org.apache.flink.runtime.jobgraph.DistributionPattern;
-import org.apache.flink.runtime.jobgraph.IntermediateDataSet;
-import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
-import org.apache.flink.runtime.jobgraph.JobGraph;
-import org.apache.flink.api.common.JobID;
-import org.apache.flink.runtime.jobmanager.scheduler.CoLocationConstraint;
-import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * This class contains test concerning the correct conversion from {@link JobGraph} to {@link ExecutionGraph} objects.
@@ -102,11 +100,11 @@ public class ExecutionGraphConstructionTest {
 		v4.setInvokableClass(AbstractInvokable.class);
 		v5.setInvokableClass(AbstractInvokable.class);
 
-		assertEquals(v1.getSelectivity(), AbstractInvokable.SELECTIVITY, 0d);
-		assertEquals(v2.getSelectivity(), AbstractInvokable.SELECTIVITY, 0d);
-		assertEquals(v3.getSelectivity(), AbstractInvokable.SELECTIVITY, 0d);
-		assertEquals(v4.getSelectivity(), AbstractInvokable.SELECTIVITY, 0d);
-		assertEquals(v5.getSelectivity(), AbstractInvokable.SELECTIVITY, 0d);
+		assertEquals(v1.getSelectivity(), AbstractInvokable.selectivity, 0d);
+		assertEquals(v2.getSelectivity(), AbstractInvokable.selectivity, 0d);
+		assertEquals(v3.getSelectivity(), AbstractInvokable.selectivity, 0d);
+		assertEquals(v4.getSelectivity(), AbstractInvokable.selectivity, 0d);
+		assertEquals(v5.getSelectivity(), AbstractInvokable.selectivity, 0d);
 
 		v2.connectNewDataSetAsInput(v1, DistributionPattern.ALL_TO_ALL, ResultPartitionType.PIPELINED);
 		v4.connectNewDataSetAsInput(v2, DistributionPattern.ALL_TO_ALL, ResultPartitionType.PIPELINED);
