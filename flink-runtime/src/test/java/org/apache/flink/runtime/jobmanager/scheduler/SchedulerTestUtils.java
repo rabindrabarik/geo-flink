@@ -19,24 +19,47 @@
 package org.apache.flink.runtime.jobmanager.scheduler;
 
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.time.Time;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.metrics.groups.UnregisteredMetricsGroup;
+import org.apache.flink.runtime.JobException;
+import org.apache.flink.runtime.blob.VoidBlobWriter;
+import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.executiongraph.Execution;
+import org.apache.flink.runtime.executiongraph.ExecutionGraph;
+import org.apache.flink.runtime.executiongraph.ExecutionGraphBuilder;
 import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.ExecutionVertex;
-import org.apache.flink.runtime.instance.*;
+import org.apache.flink.runtime.executiongraph.OptimisationModel;
+import org.apache.flink.runtime.instance.ActorGateway;
+import org.apache.flink.runtime.instance.DummyActorGateway;
+import org.apache.flink.runtime.instance.HardwareDescription;
+import org.apache.flink.runtime.instance.Instance;
+import org.apache.flink.runtime.instance.InstanceID;
+import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
+import org.apache.flink.runtime.jobmanager.scheduler.TestJobGraphs.VoidInvokable;
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
+import org.apache.flink.runtime.testingUtils.TestingUtils;
+import org.apache.flink.types.TwoKeysMap;
+import org.apache.flink.types.TwoKeysMultiMap;
+import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -213,4 +236,66 @@ public class SchedulerTestUtils {
 		
 		return set.size() == obj.length;
 	}
+
+	public static void setVoidInvokable(Iterable<JobVertex> vertices) {
+		for (JobVertex v : vertices) {
+			setVoidInvokable(v);
+		}
+	}
+
+	public static void setVoidInvokable(JobVertex v) {
+		v.setInvokableClass(VoidInvokable.class);
+	}
+
+	/**
+	 * Make an ExecutionGraph using many default dummy values and a {@link Scheduler}.
+	 * */
+	public static ExecutionGraph makeExecutionGraph(JobVertex[] vertices, Logger log) throws JobExecutionException, JobException {
+		return ExecutionGraphBuilder.buildGraph(
+			null,
+			new JobGraph(vertices),
+			new Configuration(),
+			TestingUtils.queuedActionExecutionContext(),
+			TestingUtils.queuedActionExecutionContext(),
+			new Scheduler(TestingUtils.defaultExecutor()),
+			ClassLoader.getSystemClassLoader(),
+			null,
+			Time.seconds(1L),
+			null,
+			new UnregisteredMetricsGroup(),
+			new VoidBlobWriter(),
+			Time.seconds(1L),
+			log);
+	}
+
+	/**
+	 * Make an ExecutionGraph using many default dummy values and the provided {@link Scheduler}. Note that providing a {@link GeoScheduler}
+	 * will trigger a {@link OptimisationModel} solving. In this case, placed vertices and bandwidths can also be provided.
+	 * */
+	public static ExecutionGraph makeExecutionGraph(JobVertex[] vertices, Logger log, Scheduler scheduler, @Nullable  Map<JobVertex, GeoLocation> placedVertices, @Nullable TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths) throws JobException, JobExecutionException {
+		if(placedVertices == null) {
+			placedVertices = new HashMap<>();
+		}
+		if(bandwidths == null) {
+			bandwidths = new TwoKeysMultiMap<>();
+		}
+		return ExecutionGraphBuilder.buildGraph(
+			null,
+			new JobGraph(vertices),
+			new Configuration(),
+			TestingUtils.queuedActionExecutionContext(),
+			TestingUtils.queuedActionExecutionContext(),
+			scheduler,
+			ClassLoader.getSystemClassLoader(),
+			null,
+			Time.seconds(1L),
+			null,
+			new UnregisteredMetricsGroup(),
+			new VoidBlobWriter(),
+			Time.seconds(1L),
+			log,
+			placedVertices,
+			bandwidths);
+	}
+
 }

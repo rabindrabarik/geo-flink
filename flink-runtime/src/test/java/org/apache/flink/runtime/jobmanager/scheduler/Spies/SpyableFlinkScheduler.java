@@ -2,8 +2,8 @@ package org.apache.flink.runtime.jobmanager.scheduler.Spies;
 
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.SlotProfile;
-import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.ScheduledUnit;
+import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.apache.flink.runtime.jobmaster.SlotRequestId;
 
@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-public class SpyableFlinkScheduler extends GeoScheduler implements SpyableScheduler {
+public class SpyableFlinkScheduler extends Scheduler implements SpyableScheduler {
 	/**
 	 * Creates a new scheduler.
 	 *
