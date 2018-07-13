@@ -12,20 +12,20 @@ import org.apache.flink.types.TwoKeysMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class OptimisationProblemSolution {
+public class OptimisationModelSolution {
 	private Map<JobVertex, GeoLocation> placement;
 	private Map<JobVertex, Integer> parallelism;
 	private double networkCost;
 	private double executionTime;
 
-	public OptimisationProblemSolution(Map<JobVertex, GeoLocation> placement, Map<JobVertex, Integer> parallelism, double networkCost, double executionTime) {
+	public OptimisationModelSolution(Map<JobVertex, GeoLocation> placement, Map<JobVertex, Integer> parallelism, double networkCost, double executionTime) {
 		this.placement = placement;
 		this.networkCost = networkCost;
 		this.executionTime = executionTime;
 		this.parallelism = parallelism;
 	}
 
-	public static OptimisationProblemSolution fromSolvedModel(GRBModel solvedModel, TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap, Map<JobVertex, GRBVar> parallelismVarMap, GRBVar executionTime, GRBVar networkCost) throws GRBException {
+	public static OptimisationModelSolution fromSolvedModel(GRBModel solvedModel, TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap, Map<JobVertex, GRBVar> parallelismVarMap, GRBVar executionTime, GRBVar networkCost) throws GRBException {
 		if (solvedModel.get(GRB.IntAttr.Status) != GRB.Status.OPTIMAL && solvedModel.get(GRB.IntAttr.Status) != GRB.Status.SUBOPTIMAL) {
 			throw new IllegalArgumentException("Solve the model first");
 		}
@@ -33,7 +33,7 @@ public class OptimisationProblemSolution {
 		Map<JobVertex, GeoLocation> placement = makePlacementMap(placementVarMap);
 		Map<JobVertex, Integer> parallelism = makeParallelismMap(parallelismVarMap);
 
-		return new OptimisationProblemSolution(placement, parallelism, networkCost.get(GRB.DoubleAttr.X), executionTime.get(GRB.DoubleAttr.X));
+		return new OptimisationModelSolution(placement, parallelism, networkCost.get(GRB.DoubleAttr.X), executionTime.get(GRB.DoubleAttr.X));
 	}
 
 	private static Map<JobVertex, GeoLocation> makePlacementMap(TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap) throws GRBException {

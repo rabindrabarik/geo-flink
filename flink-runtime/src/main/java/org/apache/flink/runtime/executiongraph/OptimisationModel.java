@@ -72,8 +72,6 @@ public class OptimisationModel {
 
 		model.set(GRB.IntParam.DualReductions, 0);
 
-		setAllEdgeWeights();
-
 		addPlacementVariables();
 		addParallelismVariables();
 
@@ -197,31 +195,9 @@ public class OptimisationModel {
 		return expr;
 	}
 
-	private void setAllEdgeWeights() {
-		for(JobVertex destinationVertex : vertices) {
-			for(JobEdge edge : destinationVertex.getInputs()) {
-				JobVertex sourceVertex = edge.getSource().getProducer();
-				double sourceVertexInputsWeight = 0;
-				if(sourceVertex.isInputVertex()) {
-					//input vertices have 1 input
-					sourceVertexInputsWeight = 1;
-				} else {
-					//non input vertices have a real number of inputs, each with its size
-					for (JobEdge sourceVertexInput : sourceVertex.getInputs()) {
-						sourceVertexInputsWeight += sourceVertexInput.getWeight();
-					}
-				}
-
-				//weight is ( sourceVertexInputsWeight * sourceVertexSelectivity ) / sourceVertexOutputs
-				double weightToSet = (sourceVertexInputsWeight * edge.getSource().getProducer().getSelectivity()) / edge.getSource().getProducer().getProducedDataSets().size();
-				edge.setWeight(weightToSet);
-			}
-		}
-	}
-
-	public OptimisationProblemSolution optimize() throws GRBException {
+	public OptimisationModelSolution optimize() throws GRBException {
 		model.optimize();
-		return OptimisationProblemSolution.fromSolvedModel(model, placement, parallelism, executionTime, networkCost);
+		return OptimisationModelSolution.fromSolvedModel(model, placement, parallelism, executionTime, networkCost);
 	}
 
 	String solutionString() {
@@ -261,4 +237,7 @@ public class OptimisationModel {
 		return out;
 	}
 
+	public boolean isSolved() throws GRBException {
+		return this.model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL || model.get(GRB.IntAttr.Status) == GRB.Status.SUBOPTIMAL;
+	}
 }

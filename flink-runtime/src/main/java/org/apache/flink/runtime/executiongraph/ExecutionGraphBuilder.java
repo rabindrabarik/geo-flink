@@ -37,6 +37,7 @@ import org.apache.flink.runtime.checkpoint.MasterTriggerRestoreHook;
 import org.apache.flink.runtime.checkpoint.hooks.MasterHooks;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.client.JobSubmissionException;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.executiongraph.failover.FailoverStrategy;
 import org.apache.flink.runtime.executiongraph.failover.FailoverStrategyLoader;
 import org.apache.flink.runtime.executiongraph.metrics.DownTimeGauge;
@@ -44,6 +45,7 @@ import org.apache.flink.runtime.executiongraph.metrics.NumberOfFullRestartsGauge
 import org.apache.flink.runtime.executiongraph.metrics.RestartTimeGauge;
 import org.apache.flink.runtime.executiongraph.metrics.UpTimeGauge;
 import org.apache.flink.runtime.executiongraph.restart.RestartStrategy;
+import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
@@ -51,10 +53,12 @@ import org.apache.flink.runtime.jobgraph.jsonplan.JsonPlanGenerator;
 import org.apache.flink.runtime.jobgraph.tasks.CheckpointCoordinatorConfiguration;
 import org.apache.flink.runtime.jobgraph.tasks.JobCheckpointingSettings;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
 import org.apache.flink.runtime.jobmaster.slotpool.SlotProvider;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.state.StateBackendLoader;
 import org.apache.flink.runtime.util.GRBUtils;
+import org.apache.flink.types.TwoKeysMap;
 import org.apache.flink.types.TwoKeysMultiMap;
 import org.apache.flink.util.DynamicCodeLoadingException;
 import org.apache.flink.util.SerializedValue;
@@ -66,6 +70,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -118,7 +123,97 @@ public class ExecutionGraphBuilder {
 			-1,
 			blobWriter,
 			allocationTimeout,
-			log);
+			log,
+			new HashMap<>(),
+			new TwoKeysMultiMap<>());
+	}
+
+	/**
+	 * Builds the ExecutionGraph from the JobGraph.
+	 * If a prior execution graph exists, the JobGraph will be attached. If no prior execution
+	 * graph exists, then the JobGraph will become attach to a new empty execution graph.
+	 */
+	public static ExecutionGraph buildGraph(
+		@Nullable ExecutionGraph prior,
+		JobGraph jobGraph,
+		Configuration jobManagerConfig,
+		ScheduledExecutorService futureExecutor,
+		Executor ioExecutor,
+		SlotProvider slotProvider,
+		ClassLoader classLoader,
+		CheckpointRecoveryFactory recoveryFactory,
+		Time rpcTimeout,
+		RestartStrategy restartStrategy,
+		MetricGroup metrics,
+		BlobWriter blobWriter,
+		Time allocationTimeout,
+		Logger log,
+		Map<JobVertex, GeoLocation> placedVertices,
+		TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths)
+		throws JobExecutionException, JobException {
+
+		return buildGraph(
+			prior,
+			jobGraph,
+			jobManagerConfig,
+			futureExecutor,
+			ioExecutor,
+			slotProvider,
+			classLoader,
+			recoveryFactory,
+			rpcTimeout,
+			restartStrategy,
+			metrics,
+			-1,
+			blobWriter,
+			allocationTimeout,
+			log,
+			placedVertices,
+			bandwidths);
+	}
+
+
+	/**
+	 * Builds the ExecutionGraph from the JobGraph.
+	 * If a prior execution graph exists, the JobGraph will be attached. If no prior execution
+	 * graph exists, then the JobGraph will become attach to a new empty execution graph.
+	 */
+	@Deprecated
+	public static ExecutionGraph buildGraph(
+		@Nullable ExecutionGraph prior,
+		JobGraph jobGraph,
+		Configuration jobManagerConfig,
+		ScheduledExecutorService futureExecutor,
+		Executor ioExecutor,
+		SlotProvider slotProvider,
+		ClassLoader classLoader,
+		CheckpointRecoveryFactory recoveryFactory,
+		Time rpcTimeout,
+		RestartStrategy restartStrategy,
+		MetricGroup metrics,
+		int parallelismForAutoMax,
+		BlobWriter blobWriter,
+		Time allocationTimeout,
+		Logger log)
+		throws JobExecutionException, JobException {
+		return buildGraph(
+			prior,
+			jobGraph,
+			jobManagerConfig,
+			futureExecutor,
+			ioExecutor,
+			slotProvider,
+			classLoader,
+			recoveryFactory,
+			rpcTimeout,
+			restartStrategy,
+			metrics,
+			parallelismForAutoMax,
+			blobWriter,
+			allocationTimeout,
+			log,
+			new HashMap<>(),
+			new TwoKeysMultiMap<>());
 	}
 
 	/**
@@ -128,21 +223,23 @@ public class ExecutionGraphBuilder {
 	 */
 	@Deprecated
 	public static ExecutionGraph buildGraph(
-			@Nullable ExecutionGraph prior,
-			JobGraph jobGraph,
-			Configuration jobManagerConfig,
-			ScheduledExecutorService futureExecutor,
-			Executor ioExecutor,
-			SlotProvider slotProvider,
-			ClassLoader classLoader,
-			CheckpointRecoveryFactory recoveryFactory,
-			Time rpcTimeout,
-			RestartStrategy restartStrategy,
-			MetricGroup metrics,
-			int parallelismForAutoMax,
-			BlobWriter blobWriter,
-			Time allocationTimeout,
-			Logger log)
+		@Nullable ExecutionGraph prior,
+		JobGraph jobGraph,
+		Configuration jobManagerConfig,
+		ScheduledExecutorService futureExecutor,
+		Executor ioExecutor,
+		SlotProvider slotProvider,
+		ClassLoader classLoader,
+		CheckpointRecoveryFactory recoveryFactory,
+		Time rpcTimeout,
+		RestartStrategy restartStrategy,
+		MetricGroup metrics,
+		int parallelismForAutoMax,
+		BlobWriter blobWriter,
+		Time allocationTimeout,
+		Logger log,
+		Map<JobVertex, GeoLocation> placedVertices,
+		TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths)
 		throws JobExecutionException, JobException {
 
 		checkNotNull(jobGraph, "job graph cannot be null");
@@ -160,6 +257,15 @@ public class ExecutionGraphBuilder {
 			jobGraph.getJobConfiguration(),
 			jobGraph.getUserJarBlobKeys(),
 			jobGraph.getClasspaths());
+
+		OptimisationModelSolution solution = solveOptimisationModel(jobGraph, slotProvider, log, placedVertices, bandwidths);
+
+
+		if (solution == null && slotProvider instanceof GeoScheduler) {
+			log.error("Tried to make an execution graph with a geo scheduler, but the resulting model is unfeasible. Should go forward with standard scheduler");
+			//changing the scheduler
+			slotProvider = new Scheduler(((GeoScheduler) slotProvider).getExecutor());
+		}
 
 		// create a new execution graph, if none exists so far
 		final ExecutionGraph executionGraph;
@@ -180,6 +286,15 @@ public class ExecutionGraphBuilder {
 			throw new JobException("Could not create the ExecutionGraph.", e);
 		}
 
+		if (solution != null) {
+			if (slotProvider instanceof GeoScheduler) {
+				//giving the solution to the scheduler
+				((GeoScheduler) slotProvider).addGraphSolution(executionGraph, solution);
+			} else {
+				throw new RuntimeException("This shouldn't happen");
+			}
+		}
+
 		// set the basic properties
 
 		executionGraph.setScheduleMode(jobGraph.getScheduleMode());
@@ -192,50 +307,6 @@ public class ExecutionGraphBuilder {
 
 		initMasterStart(jobGraph, classLoader, parallelismForAutoMax, log, jobName, jobId);
 
-
-		if (slotProvider instanceof GeoScheduler) {
-			GeoScheduler geoScheduler = (GeoScheduler) slotProvider;
-
-			//creating and solving the model
-			OptimisationModel model;
-			try {
-				model = new OptimisationModel(
-					jobGraph.getVerticesSortedTopologicallyFromSources(),
-					geoScheduler.getAllInstancesByGeoLocation().keySet(),
-					new HashMap<>(),
-					new TwoKeysMultiMap<>(),
-					geoScheduler.calculateAvailableSlotsByGeoLocation(),
-					geoScheduler,
-					0.5d,
-					-0.5d);
-
-				OptimisationProblemSolution solution = model.optimize();
-
-				System.out.println("\n------------------------------");
-				System.out.println("Available slots:");
-				System.out.println(GRBUtils.mapToString(geoScheduler.calculateAvailableSlotsByGeoLocation()));
-				System.out.println("------------------------------\n");
-
-
-				System.out.println("\n------------------------------");
-				System.out.println("Model hard solution" + model.solutionString());
-				System.out.println("------------------------------\n");
-
-				System.out.println("\n------------------------------");
-				System.out.println("Model soft solution" + solution.toString());
-				System.out.println("------------------------------\n");
-
-				//giving the solution future to the scheduler
-				geoScheduler.addGraphSolution(executionGraph, solution);
-
-				//applying parallelism decisions
-				for (JobVertex jobVertex : jobGraph.getVertices()) {
-					jobVertex.setParallelism(solution.getParallelism(jobVertex));
-				}
-			} catch (GRBException e) {
-				e.printStackTrace();
-			}
-		}
 
 		// topologically sort the job vertices and attach the graph to the existing one
 		// here the ExecutionJobVertex and in turn the ExecutionVertex are created
@@ -260,6 +331,59 @@ public class ExecutionGraphBuilder {
 
 
 		return executionGraph;
+	}
+
+	private static OptimisationModelSolution solveOptimisationModel(JobGraph jobGraph, SlotProvider slotProvider, Logger log, Map<JobVertex, GeoLocation> placedVertices, TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths) {
+		if (slotProvider instanceof GeoScheduler) {
+			GeoScheduler geoScheduler = (GeoScheduler) slotProvider;
+
+			setAllEdgeWeights(jobGraph);
+
+			//creating and solving the model
+			OptimisationModel model;
+			try {
+				model = new OptimisationModel(
+					jobGraph.getVerticesSortedTopologicallyFromSources(),
+					geoScheduler.getAllInstancesByGeoLocation().keySet(),
+					placedVertices,
+					bandwidths,
+					geoScheduler.calculateAvailableSlotsByGeoLocation(),
+					geoScheduler,
+					0.5d,
+					-0.5d);
+
+				OptimisationModelSolution solution = model.optimize();
+
+				if(model.isSolved()) {
+
+					System.out.println("\n------------------------------");
+					System.out.println("Available slots:");
+					System.out.println(GRBUtils.mapToString(geoScheduler.calculateAvailableSlotsByGeoLocation()));
+					System.out.println("------------------------------\n");
+
+
+					System.out.println("\n------------------------------");
+					System.out.println("Model hard solution" + model.solutionString());
+					System.out.println("------------------------------\n");
+
+					System.out.println("\n------------------------------");
+					System.out.println("Model soft solution" + solution.toString());
+					System.out.println("------------------------------\n");
+
+					//applying parallelism decisions
+					for (JobVertex jobVertex : jobGraph.getVertices()) {
+						jobVertex.setParallelism(solution.getParallelism(jobVertex));
+					}
+
+					return solution;
+				} else {
+					return null;
+				}
+			} catch (GRBException e) {
+				e.printStackTrace();
+			}
+		}
+		return null;
 	}
 
 	private static void setJsonPlan(JobGraph jobGraph, Logger log, ExecutionGraph executionGraph) {
@@ -439,6 +563,28 @@ public class ExecutionGraphBuilder {
 		metrics.gauge(NumberOfFullRestartsGauge.METRIC_NAME, new NumberOfFullRestartsGauge(executionGraph));
 
 		executionGraph.getFailoverStrategy().registerMetrics(metrics);
+	}
+
+	private static void setAllEdgeWeights(JobGraph jobGraph) {
+		for(JobVertex destinationVertex : jobGraph.getVertices()) {
+			for(JobEdge edge : destinationVertex.getInputs()) {
+				JobVertex sourceVertex = edge.getSource().getProducer();
+				double sourceVertexInputsWeight = 0;
+				if(sourceVertex.isInputVertex()) {
+					//input vertices have 1 input
+					sourceVertexInputsWeight = 1;
+				} else {
+					//non input vertices have a real number of inputs, each with its size
+					for (JobEdge sourceVertexInput : sourceVertex.getInputs()) {
+						sourceVertexInputsWeight += sourceVertexInput.getWeight();
+					}
+				}
+
+				//weight is ( sourceVertexInputsWeight * sourceVertexSelectivity ) / sourceVertexOutputs
+				double weightToSet = (sourceVertexInputsWeight * edge.getSource().getProducer().getSelectivity()) / edge.getSource().getProducer().getProducedDataSets().size();
+				edge.setWeight(weightToSet);
+			}
+		}
 	}
 
 	// ------------------------------------------------------------------------

@@ -100,10 +100,10 @@ public class GRBUtils {
 		for (TwoKeysMap.Entry<K1, K2, GRBVar> entry : map.entrySet()) {
 			valueMap.put(entry.getKey1(), entry.getKey2(), entry.getValue().get(GRB.DoubleAttr.X));
 		}
-		return mapToString(valueMap);
+		return twoKeysMapToString(valueMap);
 	}
 
-	private static <K1, K2, V> String mapToString(TwoKeysMap<K1,K2,V> map) {
+	private static <K1, K2, V> String twoKeysMapToString(TwoKeysMap<K1,K2,V> map) {
 		StringBuilder out = new StringBuilder();
 		for (TwoKeysMap.Entry<K1, K2, V> entry : map.entrySet()) {
 			out.append("\n\t").append(entry.getKey1().toString());

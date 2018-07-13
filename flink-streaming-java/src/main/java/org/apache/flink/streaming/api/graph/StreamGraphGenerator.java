@@ -483,7 +483,7 @@ public class StreamGraphGenerator {
 	}
 
 	/**
-	 * Transforms a {@code SourceTransformation}.
+	 * Transforms a {@code SinkTransformation}.
 	 */
 	private <T> Collection<Integer> transformSink(SinkTransformation<T> sink) {
 

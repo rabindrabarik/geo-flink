@@ -748,6 +748,10 @@ public class Scheduler implements InstanceListener, SlotAvailabilityListener, Sl
 		return numberAvailableInstances;
 	}
 
+	public Executor getExecutor() {
+		return executor;
+	}
+
 	public int getNumberOfInstancesWithAvailableSlots() {
 		synchronized (globalLock) {
 			processNewlyAvailableInstances();

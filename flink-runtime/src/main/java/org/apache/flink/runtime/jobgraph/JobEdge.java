@@ -52,7 +52,7 @@ public class JobEdge implements java.io.Serializable {
 	private String operatorLevelCachingDescription;
 
 	/** How much data will flow on this edge (relative to others) */
-	private double weight;
+	private double weight = 1;
 
 	/**
 	 * Constructs a new job edge, that connects an intermediate result to a consumer task.

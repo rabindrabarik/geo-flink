@@ -467,6 +467,10 @@ public class JobVertex implements java.io.Serializable {
 		return selectivity;
 	}
 
+	public void setSelectivity(double selectivity) {
+		this.selectivity = selectivity;
+	}
+
 	public void updateCoLocationGroup(CoLocationGroup group) {
 		this.coLocationGroup = group;
 	}

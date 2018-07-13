@@ -5,7 +5,7 @@ import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.clusterframework.types.SlotProfile;
 import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
-import org.apache.flink.runtime.executiongraph.OptimisationProblemSolution;
+import org.apache.flink.runtime.executiongraph.OptimisationModelSolution;
 import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.instance.SimpleSlot;
 import org.apache.flink.runtime.jobgraph.JobVertex;
@@ -27,7 +27,7 @@ import java.util.concurrent.Executor;
 public class GeoScheduler extends Scheduler {
 
 	private Map<GeoLocation, Set<Instance>> allInstancesByGeoLocation = new HashMap<>();
-	private Map<ExecutionGraph, OptimisationProblemSolution> solutions = new HashMap<>();
+	private Map<ExecutionGraph, OptimisationModelSolution> solutions = new HashMap<>();
 
 	/**
 	 * Creates a new scheduler.
@@ -104,7 +104,7 @@ public class GeoScheduler extends Scheduler {
 	@Override
 	public CompletableFuture<LogicalSlot> allocateSlot(SlotRequestId slotRequestId, ScheduledUnit task, boolean allowQueued, SlotProfile slotProfile, Time allocationTimeout) {
 		ExecutionGraph graph = task.getTaskToExecute().getVertex().getExecutionGraph();
-		OptimisationProblemSolution solution = solutions.get(graph);
+		OptimisationModelSolution solution = solutions.get(graph);
 		if(solution == null) {
 			throw new IllegalArgumentException("Please solve the placement problem for this graph first");
 		}
@@ -141,7 +141,7 @@ public class GeoScheduler extends Scheduler {
 	}
 
 
-	public void addGraphSolution(ExecutionGraph executionGraph, OptimisationProblemSolution solution) {
+	public void addGraphSolution(ExecutionGraph executionGraph, OptimisationModelSolution solution) {
 		solutions.put(executionGraph, solution);
 	}
 }
