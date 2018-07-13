@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class NetworkSpeedTradeoffSchedulingDecisionTest extends SchedulingDecisionTestFramework {
-	private final SimpleJobGraph jobGraph = new SimpleJobGraph(40);
-	private final CentralAndEdgeInstanceSet instances = new CentralAndEdgeInstanceSet(40, 20, 2);
+	private final SimpleJobGraph jobGraph = new SimpleJobGraph(4);
+	private final CentralAndEdgeInstanceSet instances = new CentralAndEdgeInstanceSet(4, 20, 2);
 	private final Map<JobVertex, GeoLocation> placedVertices;
 
 	public NetworkSpeedTradeoffSchedulingDecisionTest() {
