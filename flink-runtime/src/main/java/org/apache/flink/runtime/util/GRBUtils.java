@@ -23,7 +23,10 @@ public class GRBUtils {
         return out.toString();
     }
 
-	public static String matrixToString(GRBModel model, GRBVar[][] varMatrix) {
+	public static String matrixToString(GRBModel model, GRBVar[][] varMatrix) throws GRBException {
+    	if(!isSolved(model)) {
+    		return "Solve the model first";
+		}
         String out = "";
         double[][] valueMatrix = new double[0][0];
 
@@ -61,7 +64,11 @@ public class GRBUtils {
         return out.toString();
     }
 
-    public static String arrayToString(GRBModel solvedModel, GRBVar[] varArray) {
+    public static String arrayToString(GRBModel solvedModel, GRBVar[] varArray) throws GRBException {
+		if(!isSolved(solvedModel)) {
+			return "Solve the model first";
+		}
+
         String out = "";
 
         double[] valueArray = new double[0];
@@ -88,6 +95,9 @@ public class GRBUtils {
 
 
 	public static <K> String mapToString(GRBModel solvedModel, Map<K,GRBVar> map) throws GRBException {
+		if(!isSolved(solvedModel)) {
+			return "Solve the model first";
+		}
     	Map<K, Double> valueMap = new HashMap<>();
 		for (Map.Entry<K, GRBVar> entry : map.entrySet()) {
 			valueMap.put(entry.getKey(), entry.getValue().get(GRB.DoubleAttr.X));
@@ -96,6 +106,9 @@ public class GRBUtils {
 	}
 
 	public static <K1, K2> String twoKeysMapToString(GRBModel solvedModel, TwoKeysMap<K1, K2, GRBVar> map) throws GRBException {
+		if(!isSolved(solvedModel)) {
+			return "Solve the model first";
+		}
 		TwoKeysMap<K1, K2, Double> valueMap = new TwoKeysMultiMap<>();
 		for (TwoKeysMap.Entry<K1, K2, GRBVar> entry : map.entrySet()) {
 			valueMap.put(entry.getKey1(), entry.getKey2(), entry.getValue().get(GRB.DoubleAttr.X));
@@ -111,5 +124,9 @@ public class GRBUtils {
 			out.append("\n\t\t").append(entry.getValue().toString());
 		}
 		return out.toString();
+	}
+
+	public static boolean isSolved(GRBModel model) throws GRBException {
+    	return model.get(GRB.IntAttr.SolCount) > 0;
 	}
 }

@@ -16,6 +16,7 @@ import org.apache.flink.types.TwoKeysMap;
 import org.apache.flink.types.TwoKeysMultiMap;
 import org.apache.flink.util.Preconditions;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +47,7 @@ public class OptimisationModel {
 	private double networkCostWeight;
 	private double executionTimeWeight;
 
-	public OptimisationModel(Iterable<JobVertex> vertices,
+	public OptimisationModel(Collection<JobVertex> vertices,
 							 Set<GeoLocation> locations,
 							 Map<JobVertex, GeoLocation> placedVertices,
 							 TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths,
@@ -70,7 +71,10 @@ public class OptimisationModel {
 		this.networkCostWeight = networkCostWeight;
 		this.executionTimeWeight = executionTimeWeight;
 
-		model.set(GRB.IntParam.DualReductions, 0);
+		//double the time spent on heuristics
+		model.set(GRB.DoubleParam.Heuristics, 0.1);
+
+		model.set(GRB.DoubleParam.TimeLimit, 3 * vertices.size());
 
 		addPlacementVariables();
 		addParallelismVariables();
@@ -202,7 +206,7 @@ public class OptimisationModel {
 
 	String solutionString() {
 		try {
-			if (model.get(GRB.IntAttr.Status) != 2) {
+			if (isSolved()) {
 				return "Solve the model first";
 			}
 		} catch (GRBException e) {
@@ -238,6 +242,6 @@ public class OptimisationModel {
 	}
 
 	public boolean isSolved() throws GRBException {
-		return this.model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL || model.get(GRB.IntAttr.Status) == GRB.Status.SUBOPTIMAL;
+		return GRBUtils.isSolved(this.model);
 	}
 }

@@ -29,6 +29,7 @@ import org.apache.flink.runtime.jobmanager.scheduler.CoLocationGroup;
 import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
 import org.apache.flink.util.Preconditions;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -246,10 +247,11 @@ public class JobVertex implements java.io.Serializable {
 		this.isStoppable = StoppableTask.class.isAssignableFrom(invokable);
 
 		try {
-			//can call with null as it's a static field
-			this.selectivity = invokable.getDeclaredField("selectivity").getDouble(null);
+			Field f = invokable.getField("selectivity");
+			this.selectivity = f.getDouble(null);
 		} catch (IllegalAccessException | NoSuchFieldException e) {
 			e.printStackTrace();
+			this.selectivity = 1;
 		}
 	}
 

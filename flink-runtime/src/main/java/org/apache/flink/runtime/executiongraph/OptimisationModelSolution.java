@@ -26,7 +26,7 @@ public class OptimisationModelSolution {
 	}
 
 	public static OptimisationModelSolution fromSolvedModel(GRBModel solvedModel, TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap, Map<JobVertex, GRBVar> parallelismVarMap, GRBVar executionTime, GRBVar networkCost) throws GRBException {
-		if (solvedModel.get(GRB.IntAttr.Status) != GRB.Status.OPTIMAL && solvedModel.get(GRB.IntAttr.Status) != GRB.Status.SUBOPTIMAL) {
+		if (!GRBUtils.isSolved(solvedModel)) {
 			throw new IllegalArgumentException("Solve the model first");
 		}
 
