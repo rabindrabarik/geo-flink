@@ -19,9 +19,8 @@
 package org.apache.flink.streaming.api.transformations;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.streaming.api.operators.ChainingStrategy;
-
 import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
+import org.apache.flink.streaming.api.operators.ChainingStrategy;
 
 import java.util.Collection;
 import java.util.List;
@@ -54,6 +53,12 @@ public class UnionTransformation<T> extends StreamTransformation<T> {
 				throw new UnsupportedOperationException("Type mismatch in input " + input);
 			}
 		}
+
+		//selectivity is set to the sum of the selectivities
+		setSelectivity(inputs.stream()
+			.map(StreamTransformation::getSelectivity)
+			.reduce((s1, s2) -> s1 + s2)
+			.orElse(1d));
 
 		this.inputs = Lists.newArrayList(inputs);
 	}

@@ -21,10 +21,9 @@ package org.apache.flink.streaming.api.transformations;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
-
-import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
 
 import java.util.Collection;
 import java.util.List;
@@ -64,6 +63,29 @@ public class OneInputTransformation<IN, OUT> extends StreamTransformation<OUT> {
 			TypeInformation<OUT> outputType,
 			int parallelism) {
 		super(name, outputType, parallelism);
+		this.input = input;
+		this.operator = operator;
+	}
+
+	/**
+	 * Creates a new {@code OneInputTransformation} from the given input operator and selectivity.
+	 *
+	 * @param input The input {@code StreamTransformation}
+	 * @param name The name of the {@code StreamTransformation}, this will be shown in Visualizations and the Log
+	 * @param operator The {@code TwoInputStreamOperator}
+	 * @param outputType The type of the elements produced by this {@code OneInputTransformation}
+	 * @param parallelism The parallelism of this {@code OneInputTransformation}
+	 * @param selectivity The selectivity of this {@code {@link OneInputTransformation}}. It represents the amount of data
+	 *                        that will come out of this transformation, relative to this transformation's input size
+	 */
+	public OneInputTransformation(
+		StreamTransformation<IN> input,
+		String name,
+		OneInputStreamOperator<IN, OUT> operator,
+		TypeInformation<OUT> outputType,
+		int parallelism,
+		double selectivity) {
+		super(name, outputType, parallelism, selectivity);
 		this.input = input;
 		this.operator = operator;
 	}

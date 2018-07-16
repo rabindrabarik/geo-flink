@@ -19,12 +19,14 @@
 package org.apache.flink.streaming.api.transformations;
 
 import org.apache.flink.annotation.Internal;
-import org.apache.flink.streaming.api.operators.ChainingStrategy;
-
 import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
+import org.apache.flink.streaming.api.collector.selector.OutputSelector;
+import org.apache.flink.streaming.api.collector.selector.SelectivityAwareOutputSelector;
+import org.apache.flink.streaming.api.operators.ChainingStrategy;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This transformation represents a selection of only certain upstream elements. This must
@@ -45,7 +47,9 @@ public class SelectTransformation<T> extends StreamTransformation<T> {
 	/**
 	 * Creates a new {@code SelectionTransformation} from the given input that only selects
 	 * the streams with the selected names.
-	 *
+	 * <p>
+	 * If the input is not an instance of {@link SplitTransformation} and its {@link OutputSelector} an instance of{@link SelectivityAwareOutputSelector},
+	 * a selectivity of 0.5 will be used.
 	 * @param input The input {@code StreamTransformation}
 	 * @param selectedNames The names from the upstream {@code SplitTransformation} that this
 	 *                      {@code SelectTransformation} selects.
@@ -55,6 +59,28 @@ public class SelectTransformation<T> extends StreamTransformation<T> {
 		super("Select", input.getOutputType(), input.getParallelism());
 		this.input = input;
 		this.selectedNames = selectedNames;
+		if(isSelectivityAware(input)) {
+			setSelectivityFromSelector((SplitTransformation<T>) input, selectedNames);
+		} else {
+			this.selectivity = 0.5;
+		}
+	}
+
+	/**
+	 * Set the selectivity of the transformation to the sum of the selectivities associated by the
+	 * transformation's {@link OutputSelector} with the selectedNames
+	 * */
+	private void setSelectivityFromSelector(SplitTransformation<T> input, List<String> selectedNames) {
+		SelectivityAwareOutputSelector<T> os = (SelectivityAwareOutputSelector<T>) input.getOutputSelector();
+		this.selectivity = os.selectivities().entrySet().stream().filter(e -> selectedNames.contains(e.getKey())).map(Map.Entry::getValue).reduce((s1, s2) -> s1 + s2).orElse(0.5d);
+	}
+
+	/**
+	 * @return true if the {@link StreamTransformation} passed as a parameter is a {@link SplitTransformation} and its
+	 * {@link OutputSelector} is a {@link SelectivityAwareOutputSelector}
+	 * */
+	private boolean isSelectivityAware(StreamTransformation<T> input) {
+		return input instanceof SplitTransformation && ((SplitTransformation<T>) input).getOutputSelector() instanceof SelectivityAwareOutputSelector;
 	}
 
 	/**

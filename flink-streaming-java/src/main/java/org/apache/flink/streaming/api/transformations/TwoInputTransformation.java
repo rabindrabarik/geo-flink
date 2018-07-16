@@ -21,10 +21,9 @@ package org.apache.flink.streaming.api.transformations;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.TwoInputStreamOperator;
-
-import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
 
 import java.util.Collection;
 import java.util.List;
@@ -73,6 +72,7 @@ public class TwoInputTransformation<IN1, IN2, OUT> extends StreamTransformation<
 		this.input1 = input1;
 		this.input2 = input2;
 		this.operator = operator;
+		this.selectivity = input1.getSelectivity() + input2.getSelectivity();
 	}
 
 	/**

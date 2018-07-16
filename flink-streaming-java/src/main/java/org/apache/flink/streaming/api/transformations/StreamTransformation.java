@@ -119,6 +119,12 @@ public abstract class StreamTransformation<T> {
 	private int parallelism;
 
 	/**
+	 * The selectivity of this operator. It represents the amount of data that will come out of this transformation,
+	 * relative to this transformation's input size
+	 * */
+	protected double selectivity = 1;
+
+	/**
 	 * The maximum parallelism for this stream transformation. It defines the upper limit for
 	 * dynamic scaling and the number of key groups used for partitioned state.
 	 */
@@ -151,7 +157,7 @@ public abstract class StreamTransformation<T> {
 	private String slotSharingGroup;
 
 	/**
-	 * Creates a new {@code StreamTransformation} with the given name, output type and parallelism.
+	 * Creates a new {@code StreamTransformation} with the given name, output type, parallelism and a selectivity of 1.
 	 *
 	 * @param name The name of the {@code StreamTransformation}, this will be shown in Visualizations and the Log
 	 * @param outputType The output type of this {@code StreamTransformation}
@@ -163,6 +169,24 @@ public abstract class StreamTransformation<T> {
 		this.outputType = outputType;
 		this.parallelism = parallelism;
 		this.slotSharingGroup = null;
+	}
+
+	/**
+	 * Creates a new {@code StreamTransformation} with the given name, output type, parallelism and selectivity.
+	 *
+	 * @param name The name of the {@code StreamTransformation}, this will be shown in Visualizations and the Log
+	 * @param outputType The output type of this {@code StreamTransformation}
+	 * @param parallelism The parallelism of this {@code StreamTransformation}
+	 * @param selectivity The selectivity of this {@code StreamTransformation}. It represents the amount of data
+	 *                       that will come out of this transformation, relative to this transformation's input size
+	 */
+	public StreamTransformation(String name, TypeInformation<T> outputType, int parallelism, double selectivity) {
+		this.id = getNewNodeId();
+		this.name = Preconditions.checkNotNull(name);
+		this.outputType = outputType;
+		this.parallelism = parallelism;
+		this.slotSharingGroup = null;
+		this.selectivity = selectivity;
 	}
 
 	/**
@@ -421,6 +445,22 @@ public abstract class StreamTransformation<T> {
 	 * @return The list of transitive predecessors.
 	 */
 	public abstract Collection<StreamTransformation<?>> getTransitivePredecessors();
+
+	/**
+	 * @return the selectivity of this operator. It represents the amount of data that will come out of this transformation,
+	 * relative to this transformation's input size
+	 */
+	public double getSelectivity() {
+		return selectivity;
+	}
+
+	/**
+	 * Sets the selectivity of this operator. It represents the amount of data that will come out of this transformation,
+	 * relative to this transformation's input size
+	 */
+	public void setSelectivity(double selectivity) {
+		this.selectivity = selectivity;
+	}
 
 	@Override
 	public String toString() {
