@@ -41,10 +41,13 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.io.CsvOutputFormat;
 import org.apache.flink.api.java.io.TextOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple1;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.InputTypeConfigurable;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.core.fs.Path;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.collector.selector.OutputSelector;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -106,6 +109,11 @@ import java.util.List;
  * <li>{@link DataStream#map}
  * <li>{@link DataStream#filter}
  * </ul>
+ * <p>
+ *     Selectivity can be specified for the user defined transformations. Specifying
+ *     a selectivity that is close to the real-world one will lead to better scheduling
+ *     decisions when using a {@link GeoScheduler} for scheduling.
+ * </p>
  *
  * @param <T> The type of the elements in this stream.
  */
@@ -295,7 +303,7 @@ public class DataStream<T> {
 	 * @param fields
 	 *            The position of the fields on which the {@link DataStream}
 	 *            will be grouped.
-	 * @return The {@link DataStream} with partitioned state (i.e. KeyedStream)
+	 * @return The {@link DataStream} with partitioned state (i.e. KeyedStream }
 	 */
 	public KeyedStream<T, Tuple> keyBy(int... fields) {
 		if (getType() instanceof BasicArrayTypeInfo || getType() instanceof PrimitiveArrayTypeInfo) {
@@ -561,6 +569,39 @@ public class DataStream<T> {
 	 * @param mapper
 	 *            The MapFunction that is called for each element of the
 	 *            DataStream.
+	 *
+	 * @param selectivity
+	 * 			  The amount of data that will come out of the custom function,
+	 * 			  for every tuple that comes in. For example, if a {@link Tuple2} comes in and
+	 * 			  a {@link Tuple1} comes out, a value of 0.5 may be appropriate.
+	 * 			  Specifying a selectivity that is close to the real-world one will lead to
+	 * 			  better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * @param <R>
+	 *            output type
+	 * @return The transformed {@link DataStream}.
+	 */
+	public <R> SingleOutputStreamOperator<R> map(MapFunction<T, R> mapper, double selectivity) {
+
+		TypeInformation<R> outType = TypeExtractor.getMapReturnTypes(clean(mapper), getType(),
+			Utils.getCallLocationName(), true);
+
+		return transform("Map", outType, new StreamMap<>(clean(mapper)), selectivity);
+	}
+
+	/**
+	 * Applies a Map transformation on a {@link DataStream}. The transformation
+	 * calls a {@link MapFunction} for each element of the DataStream. Each
+	 * MapFunction call returns exactly one element. The user can also extend
+	 * {@link RichMapFunction} to gain access to other features provided by the
+	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
+	 * <p>
+	 * A default selectivity of 0.5 will be used. See {@link #map(MapFunction, double)}
+	 * for a definition of selectivity. Specifying a selectivity that is close to the
+	 * real-world one will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 *
+	 * @param mapper
+	 *            The MapFunction that is called for each element of the
+	 *            DataStream.
 	 * @param <R>
 	 *            output type
 	 * @return The transformed {@link DataStream}.
@@ -570,7 +611,36 @@ public class DataStream<T> {
 		TypeInformation<R> outType = TypeExtractor.getMapReturnTypes(clean(mapper), getType(),
 				Utils.getCallLocationName(), true);
 
-		return transform("Map", outType, new StreamMap<>(clean(mapper)));
+		return transform("Map", outType, new StreamMap<>(clean(mapper)), 0.5d);
+	}
+
+	/**
+	 * Applies a FlatMap transformation on a {@link DataStream}. The
+	 * transformation calls a {@link FlatMapFunction} for each element of the
+	 * DataStream. Each FlatMapFunction call can return any number of elements
+	 * including none. The user can also extend {@link RichFlatMapFunction} to
+	 * gain access to other features provided by the
+	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
+	 * <p>
+	 * A default selectivity of 1 will be used. See {@link #flatMap(FlatMapFunction, double)}
+	 * for a definition of selectivity.Specifying a selectivity that is close to the
+	 * real-world one will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 *
+	 * @param flatMapper
+	 *            The FlatMapFunction that is called for each element of the
+	 *            DataStream
+	 *
+	 * @param <R>
+	 *            output type
+	 * @return The transformed {@link DataStream}.
+	 */
+	public <R> SingleOutputStreamOperator<R> flatMap(FlatMapFunction<T, R> flatMapper) {
+
+		TypeInformation<R> outType = TypeExtractor.getFlatMapReturnTypes(clean(flatMapper),
+			getType(), Utils.getCallLocationName(), true);
+
+		return transform("Flat Map", outType, new StreamFlatMap<>(clean(flatMapper)), 1d);
+
 	}
 
 	/**
@@ -585,16 +655,22 @@ public class DataStream<T> {
 	 *            The FlatMapFunction that is called for each element of the
 	 *            DataStream
 	 *
+	 * @param selectivity
+	 * 			  The amount of data that will come out of the custom function,
+	 * 			  for every tuple that comes in. For example, if a {@link Tuple1} comes in and
+	 * 			  two {@link Tuple2} come out, a value of 4 may be appropriate.
+	 * 			  Specifying a selectivity that is close to the real-world one will lead
+	 * 			  to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
 	 * @param <R>
 	 *            output type
 	 * @return The transformed {@link DataStream}.
 	 */
-	public <R> SingleOutputStreamOperator<R> flatMap(FlatMapFunction<T, R> flatMapper) {
+	public <R> SingleOutputStreamOperator<R> flatMap(FlatMapFunction<T, R> flatMapper, double selectivity) {
 
 		TypeInformation<R> outType = TypeExtractor.getFlatMapReturnTypes(clean(flatMapper),
 				getType(), Utils.getCallLocationName(), true);
 
-		return transform("Flat Map", outType, new StreamFlatMap<>(clean(flatMapper)));
+		return transform("Flat Map", outType, new StreamFlatMap<>(clean(flatMapper)), selectivity);
 
 	}
 
@@ -640,6 +716,43 @@ public class DataStream<T> {
 	 *                      in the stream.
 	 * @param outputType {@link TypeInformation} for the result type of the function.
 	 *
+	 * @param selectivity
+	 * 			  The amount of data that will come out of the custom function,
+	 * 			  for every tuple that comes in. For example, if a {@link Tuple1} comes in and
+	 * 			  two {@link Tuple2} come out, a value of 4 may be appropriate.
+	 * 			  Specifying a selectivity that is close to the real-world one will lead to
+	 * 			  better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 *
+	 * @param <R> The type of elements emitted by the {@code ProcessFunction}.
+	 *
+	 * @return The transformed {@link DataStream}.
+	 */
+	@Internal
+	public <R> SingleOutputStreamOperator<R> process(
+		ProcessFunction<T, R> processFunction,
+		TypeInformation<R> outputType,
+		double selectivity) {
+
+		ProcessOperator<T, R> operator = new ProcessOperator<>(clean(processFunction));
+
+		return transform("Process", outputType, operator, selectivity);
+	}
+
+	/**
+	 * Applies the given {@link ProcessFunction} on the input stream, thereby
+	 * creating a transformed output stream.
+	 *
+	 * <p>The function will be called for every element in the input streams and can produce zero
+	 * or more output elements.
+	 *
+	 * <p>
+	 * 	 A default selectivity of 1 will be used. See {@link #process(ProcessFunction, TypeInformation, double)}
+	 * 	 for a definition of selectivity.Specifying a selectivity that is close to the
+	 * 	 real-world one will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * @param processFunction The {@link ProcessFunction} that is called for each element
+	 *                      in the stream.
+	 * @param outputType {@link TypeInformation} for the result type of the function.
+	 *
 	 * @param <R> The type of elements emitted by the {@code ProcessFunction}.
 	 *
 	 * @return The transformed {@link DataStream}.
@@ -651,7 +764,31 @@ public class DataStream<T> {
 
 		ProcessOperator<T, R> operator = new ProcessOperator<>(clean(processFunction));
 
-		return transform("Process", outputType, operator);
+		return transform("Process", outputType, operator, 1);
+	}
+
+	/**
+	 * Applies a Filter transformation on a {@link DataStream}. The
+	 * transformation calls a {@link FilterFunction} for each element of the
+	 * DataStream and retains only those element for which the function returns
+	 * true. Elements for which the function returns false are filtered. The
+	 * user can also extend {@link RichFilterFunction} to gain access to other
+	 * features provided by the
+	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
+	 *
+	 * <p>
+	 * 	 A default selectivity of 0.5 will be used. See {@link #filter(FilterFunction, double)}
+	 * 	 for a definition of selectivity. Specifying a selectivity that is close to the real-world one
+	 * 	 will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 *
+	 * @param filter
+	 *            The FilterFunction that is called for each element of the
+	 *            DataStream.
+	 * @return The filtered DataStream.
+	 */
+	public SingleOutputStreamOperator<T> filter(FilterFunction<T> filter) {
+		return transform("Filter", getType(), new StreamFilter<>(clean(filter)), 0.5d);
+
 	}
 
 	/**
@@ -666,10 +803,16 @@ public class DataStream<T> {
 	 * @param filter
 	 *            The FilterFunction that is called for each element of the
 	 *            DataStream.
+	 * @param selectivity
+	 * 			  The amount of data that will come out of the custom function,
+	 * 			  for every tuple that comes in. For example, if half of the
+	 * 			  tuples get discarded, a value of 0.5 may be appropriate.
+	 * 			  Specifying a selectivity that is close to the real-world one will lead to
+	 * 			  better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
 	 * @return The filtered DataStream.
 	 */
-	public SingleOutputStreamOperator<T> filter(FilterFunction<T> filter) {
-		return transform("Filter", getType(), new StreamFilter<>(clean(filter)));
+	public SingleOutputStreamOperator<T> filter(FilterFunction<T> filter, double selectivity) {
+		return transform("Filter", getType(), new StreamFilter<>(clean(filter)), selectivity);
 
 	}
 
@@ -829,7 +972,7 @@ public class DataStream<T> {
 		// from the source go to each extraction operator round robin.
 		int inputParallelism = getTransformation().getParallelism();
 		ExtractTimestampsOperator<T> operator = new ExtractTimestampsOperator<>(clean(extractor));
-		return transform("ExtractTimestamps", getTransformation().getOutputType(), operator)
+		return transform("ExtractTimestamps", getTransformation().getOutputType(), operator, getTransformation().getSelectivity())
 				.setParallelism(inputParallelism);
 	}
 
@@ -876,7 +1019,7 @@ public class DataStream<T> {
 		TimestampsAndPeriodicWatermarksOperator<T> operator =
 				new TimestampsAndPeriodicWatermarksOperator<>(cleanedAssigner);
 
-		return transform("Timestamps/Watermarks", getTransformation().getOutputType(), operator)
+		return transform("Timestamps/Watermarks", getTransformation().getOutputType(), operator, getTransformation().getSelectivity())
 				.setParallelism(inputParallelism);
 	}
 
@@ -919,7 +1062,7 @@ public class DataStream<T> {
 		TimestampsAndPunctuatedWatermarksOperator<T> operator =
 				new TimestampsAndPunctuatedWatermarksOperator<>(cleanedAssigner);
 
-		return transform("Timestamps/Watermarks", getTransformation().getOutputType(), operator)
+		return transform("Timestamps/Watermarks", getTransformation().getOutputType(), operator, getTransformation().getSelectivity())
 				.setParallelism(inputParallelism);
 	}
 
@@ -1119,12 +1262,19 @@ public class DataStream<T> {
 	 *            the output type of the operator
 	 * @param operator
 	 *            the object containing the transformation logic
+	 * @param selectivity
+	 * 			  The amount of data that will come out of the custom function,
+	 * 			  for every tuple that comes in. For example, if half of the
+	 * 			  tuples get discarded, a value of 0.5 may be appropriate.
+	 * 			  Specifying a selectivity that is close to the real-world one will lead to
+	 * 			  better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 *
 	 * @param <R>
 	 *            type of the return stream
 	 * @return the data stream constructed
 	 */
 	@PublicEvolving
-	public <R> SingleOutputStreamOperator<R> transform(String operatorName, TypeInformation<R> outTypeInfo, OneInputStreamOperator<T, R> operator) {
+	public <R> SingleOutputStreamOperator<R> transform(String operatorName, TypeInformation<R> outTypeInfo, OneInputStreamOperator<T, R> operator, double selectivity) {
 
 		// read the output type of the input Transform to coax out errors about MissingTypeInfo
 		transformation.getOutputType();
@@ -1134,7 +1284,8 @@ public class DataStream<T> {
 				operatorName,
 				operator,
 				outTypeInfo,
-				environment.getParallelism());
+				environment.getParallelism(),
+				selectivity);
 
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		SingleOutputStreamOperator<R> returnStream = new SingleOutputStreamOperator(environment, resultTransform);
