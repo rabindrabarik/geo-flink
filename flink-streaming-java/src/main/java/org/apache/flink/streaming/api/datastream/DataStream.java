@@ -1296,6 +1296,45 @@ public class DataStream<T> {
 	}
 
 	/**
+	 * Method for passing user defined operators along with the type
+	 * information that will transform the DataStream.
+	 * <p>
+	 * A default selectivity of 1 will be used. See {@link #transform(String, TypeInformation, OneInputStreamOperator, double)}
+	 * for a definition of selectivity. Specifying a selectivity that is close to the real-world one
+	 * will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * @param operatorName
+	 *            name of the operator, for logging purposes
+	 * @param outTypeInfo
+	 *            the output type of the operator
+	 * @param operator
+	 *            the object containing the transformation logic
+	 *
+	 * @param <R>
+	 *            type of the return stream
+	 * @return the data stream constructed
+	 */
+	@PublicEvolving
+	public <R> SingleOutputStreamOperator<R> transform(String operatorName, TypeInformation<R> outTypeInfo, OneInputStreamOperator<T, R> operator) {
+
+		// read the output type of the input Transform to coax out errors about MissingTypeInfo
+		transformation.getOutputType();
+
+		OneInputTransformation<T, R> resultTransform = new OneInputTransformation<>(
+			this.transformation,
+			operatorName,
+			operator,
+			outTypeInfo,
+			environment.getParallelism());
+
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		SingleOutputStreamOperator<R> returnStream = new SingleOutputStreamOperator(environment, resultTransform);
+
+		getExecutionEnvironment().addOperator(resultTransform);
+
+		return returnStream;
+	}
+
+	/**
 	 * Internal function for setting the partitioner for the DataStream.
 	 *
 	 * @param partitioner
