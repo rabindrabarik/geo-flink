@@ -3,7 +3,6 @@ package org.apache.flink.runtime.jobmanager.scheduler;
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.JobManagerOptions;
-import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.blob.VoidBlobStore;
 import org.apache.flink.runtime.jobmanager.JobManager;
 import org.apache.flink.runtime.metrics.NoOpMetricRegistry;
@@ -29,8 +28,7 @@ public class SchedulerChoiceTest extends TestLogger {
 			TestingUtils.defaultExecutor(),
 			TestingUtils.defaultExecutor(),
 			new VoidBlobStore(),
-			NoOpMetricRegistry.INSTANCE,
-			AkkaUtils.createLocalActorSystem(new Configuration()));
+			NoOpMetricRegistry.INSTANCE);
 
 		Scheduler scheduler = (Scheduler) t._2();
 
@@ -50,8 +48,7 @@ public class SchedulerChoiceTest extends TestLogger {
 			TestingUtils.defaultExecutor(),
 			TestingUtils.defaultExecutor(),
 			new VoidBlobStore(),
-			NoOpMetricRegistry.INSTANCE,
-			null);
+			NoOpMetricRegistry.INSTANCE);
 
 		Scheduler scheduler = (Scheduler) t._2();
 
@@ -71,8 +68,7 @@ public class SchedulerChoiceTest extends TestLogger {
 			TestingUtils.defaultExecutor(),
 			TestingUtils.defaultExecutor(),
 			new VoidBlobStore(),
-			NoOpMetricRegistry.INSTANCE,
-			null);
+			NoOpMetricRegistry.INSTANCE);
 
 		Scheduler scheduler = (Scheduler) t._2();
 

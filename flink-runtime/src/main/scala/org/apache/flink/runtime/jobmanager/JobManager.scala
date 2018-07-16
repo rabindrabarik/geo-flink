@@ -55,9 +55,7 @@ import org.apache.flink.runtime.highavailability.{HighAvailabilityServices, High
 import org.apache.flink.runtime.instance.{AkkaActorGateway, InstanceID, InstanceManager}
 import org.apache.flink.runtime.jobgraph.{JobGraph, JobStatus}
 import org.apache.flink.runtime.jobmanager.SubmittedJobGraphStore.SubmittedJobGraphListener
-import org.apache.flink.runtime.jobmanager.scheduler.{Scheduler => FlinkScheduler}
-import org.apache.flink.runtime.jobmanager.scheduler.{Scheduler => FlinkAbstractScheduler}
-import org.apache.flink.runtime.jobmanager.scheduler.{GeoScheduler => FlinkGeoScheduler}
+import org.apache.flink.runtime.jobmanager.scheduler.{GeoScheduler => FlinkGeoScheduler, Scheduler => FlinkScheduler}
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway
 import org.apache.flink.runtime.jobmaster.JobMaster
 import org.apache.flink.runtime.leaderelection.{LeaderContender, LeaderElectionService}
@@ -2408,6 +2406,43 @@ object JobManager {
   }
 
   /**
+    * Create the job manager components as (instanceManager, scheduler, libraryCacheManager,
+    *              archiverProps, defaultExecutionRetries,
+    *              delayBetweenRetries, timeout)
+    *
+    * @param configuration The configuration from which to parse the config values.
+    * @param futureExecutor to run JobManager's futures
+    * @param ioExecutor to run blocking io operations
+    * @param blobStore to store blobs persistently
+    * @return The members for a default JobManager.
+    */
+  def createJobManagerComponents(
+                                  configuration: Configuration,
+                                  futureExecutor: ScheduledExecutorService,
+                                  ioExecutor: Executor,
+                                  blobStore: BlobStore,
+                                  metricRegistry: FlinkMetricRegistry) :
+  (InstanceManager,
+    FlinkAbstractScheduler,
+    BlobServer,
+    BlobLibraryCacheManager,
+    RestartStrategyFactory,
+    FiniteDuration, // timeout
+    Int, // number of archived jobs
+    Option[Path], // archive path
+    FiniteDuration, // timeout for job recovery
+    JobManagerMetricGroup
+    ) = {
+      createJobManagerComponents(
+      configuration,
+      futureExecutor,
+      ioExecutor,
+      blobStore,
+      metricRegistry,
+      null)
+    }
+
+  /**
    * Create the job manager components as (instanceManager, scheduler, libraryCacheManager,
    *              archiverProps, defaultExecutionRetries,
    *              delayBetweenRetries, timeout)
@@ -2423,7 +2458,8 @@ object JobManager {
       futureExecutor: ScheduledExecutorService,
       ioExecutor: Executor,
       blobStore: BlobStore,
-      metricRegistry: FlinkMetricRegistry) :
+      metricRegistry: FlinkMetricRegistry,
+      injectedScheduler: FlinkAbstractScheduler) :
     (InstanceManager,
       FlinkAbstractScheduler,
       BlobServer,
@@ -2433,38 +2469,6 @@ object JobManager {
       Int, // number of archived jobs
       Option[Path], // archive path
       FiniteDuration, // timeout for job recovery
-      JobManagerMetricGroup
-    ) = createJobManagerComponents(configuration, futureExecutor, ioExecutor, blobStore, metricRegistry,
-          AkkaUtils.createLocalActorSystem(new Configuration()))
-
-  /**
-    * Create the job manager components as (instanceManager, scheduler, libraryCacheManager,
-    *              archiverProps, defaultExecutionRetries,
-    *              delayBetweenRetries, timeout)
-    *
-    * @param configuration The configuration from which to parse the config values.
-    * @param futureExecutor to run JobManager's futures
-    * @param ioExecutor to run blocking io operations
-    * @param blobStore to store blobs persistently
-    * @param actorSystem (optionally) the actor system of this job manager. Allows to pass a reference to the scheduler
-    * @return The members for a default JobManager.
-    */
-  def createJobManagerComponents(
-      configuration: Configuration,
-      futureExecutor: ScheduledExecutorService,
-      ioExecutor: Executor,
-      blobStore: BlobStore,
-      metricRegistry: FlinkMetricRegistry,
-      actorSystem: ActorSystem) :
-    (InstanceManager,
-      FlinkAbstractScheduler,
-      BlobServer,
-      BlobLibraryCacheManager,
-      RestartStrategyFactory,
-      FiniteDuration,
-      Int,
-      Option[Path],
-      FiniteDuration,
       JobManagerMetricGroup
     ) = {
 
@@ -2506,12 +2510,15 @@ object JobManager {
       instanceManager = new InstanceManager()
 
       //choosing the type of scheduler
-      if(configuration.getBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED)) {
-          //geoscheduling
-          val timeout = FutureUtils.toTime(AkkaUtils.getTimeout(configuration))
-          scheduler = new FlinkGeoScheduler(ExecutionContext.fromExecutor(futureExecutor))
+      if(injectedScheduler != null) {
+        scheduler = injectedScheduler
       } else {
-        scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
+        if (configuration.getBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED)) {
+          //geoscheduling
+          scheduler = new FlinkGeoScheduler(ExecutionContext.fromExecutor(futureExecutor))
+        } else {
+          scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
+        }
       }
 
       libraryCacheManager =
@@ -2662,8 +2669,7 @@ object JobManager {
       futureExecutor,
       ioExecutor,
       highAvailabilityServices.createBlobStore(),
-      metricRegistry,
-      actorSystem)
+      metricRegistry)
 
     val archiveProps = getArchiveProps(archiveClass, archiveCount, archivePath)
 
