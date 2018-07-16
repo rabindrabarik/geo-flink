@@ -41,7 +41,6 @@ import org.apache.flink.runtime.instance.InstanceID;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
-import org.apache.flink.runtime.jobmanager.scheduler.invokables.VoidInvokable;
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
@@ -237,15 +236,6 @@ public class SchedulerTestUtils {
 		return set.size() == obj.length;
 	}
 
-	public static void setVoidInvokable(Iterable<JobVertex> vertices) {
-		for (JobVertex v : vertices) {
-			setVoidInvokable(v);
-		}
-	}
-
-	public static void setVoidInvokable(JobVertex v) {
-		v.setInvokableClass(VoidInvokable.class);
-	}
 
 	/**
 	 * Make an ExecutionGraph using many default dummy values and a {@link Scheduler}.

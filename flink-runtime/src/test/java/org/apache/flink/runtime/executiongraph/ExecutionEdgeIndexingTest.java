@@ -5,7 +5,7 @@ import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
 import org.apache.flink.runtime.jobgraph.JobVertex;
-import org.apache.flink.runtime.jobmanager.scheduler.SchedulerTestUtils;
+import org.apache.flink.runtime.testutils.invokables.VoidInvokable;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +40,7 @@ public class ExecutionEdgeIndexingTest {
 
 		for (JobVertex vertex : vertices) {
 			vertex.setParallelism(4);
-			SchedulerTestUtils.setVoidInvokable(vertex);
+			vertex.setInvokableClass(VoidInvokable.class);
 		}
 
 		executionGraph = makeExecutionGraph(vertices, log);

@@ -74,7 +74,7 @@ public class OptimisationModel {
 		//double the time spent on heuristics
 		model.set(GRB.DoubleParam.Heuristics, 0.1);
 
-		model.set(GRB.DoubleParam.TimeLimit, 3 * vertices.size());
+		model.set(GRB.DoubleParam.TimeLimit, 10 * vertices.size());
 
 		addPlacementVariables();
 		addParallelismVariables();

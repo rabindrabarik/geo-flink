@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler.instanceSets;
+package writableTypes;
 
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.instance.AckingDummyActorGateway;
@@ -10,12 +10,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class CentralAndEdgeInstanceSet extends InstanceSet {
+public class CentralAndEdgeInstances extends TestInstanceSet {
 	private final Set<Instance> instanceSet = new HashSet<>();
 	private final Map<GeoLocation, Instance> edgeClouds = new HashMap<>();
 	private final Instance centralCloud;
 
-	public CentralAndEdgeInstanceSet(int numEdgeClouds, int centralSlots, int eachEdgeSlots) {
+	public CentralAndEdgeInstances(int numEdgeClouds, int centralSlots, int eachEdgeSlots) {
 		params = new Object[3];
 		params[0] = numEdgeClouds;
 		params[1] = centralSlots;

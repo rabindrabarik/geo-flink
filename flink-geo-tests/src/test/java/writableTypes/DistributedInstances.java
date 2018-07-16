@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler.instanceSets;
+package writableTypes;
 
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.instance.AckingDummyActorGateway;
@@ -8,7 +8,7 @@ import org.apache.flink.runtime.jobmanager.scheduler.SchedulerTestUtils;
 import java.util.HashSet;
 import java.util.Set;
 
-public class DistributedInstances extends InstanceSet {
+public class DistributedInstances extends TestInstanceSet {
 	private Set<Instance> instanceSet = new HashSet<>();
 
 	public DistributedInstances(int howMany) {

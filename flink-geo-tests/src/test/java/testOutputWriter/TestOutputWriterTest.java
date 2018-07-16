@@ -1,9 +1,9 @@
-package org.apache.flink.runtime.jobmanager.scheduler.schedulingDecisionFramework;
+package testOutputWriter;
 
 import org.junit.Before;
 import org.junit.Test;
 
-public class SchedulingDecisionWriterTest {
+public class TestOutputWriterTest {
 
 	private TestOutputWriter writer;
 

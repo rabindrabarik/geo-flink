@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler;
+package writableTypes;
 
 public abstract class WritableType {
 

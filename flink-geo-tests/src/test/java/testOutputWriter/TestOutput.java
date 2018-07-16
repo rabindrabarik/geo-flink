@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler.schedulingDecisionFramework;
+package testOutputWriter;
 
 public interface TestOutput {
 	Object[] getFields();

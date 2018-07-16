@@ -1,10 +1,10 @@
-package org.apache.flink.runtime.jobmanager.scheduler.testJobGraphs;
+package writableTypes;
 
+import invokables.VoidInvokable;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
-import org.apache.flink.runtime.jobmanager.scheduler.SchedulerTestUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -61,9 +61,9 @@ public class SimpleJobGraph extends TestJobGraph {
 			if (vertex.getMaxParallelism() < 1) {
 				vertex.setMaxParallelism(4);
 			}
-		}
 
-		SchedulerTestUtils.setVoidInvokable(vertices);
+			vertex.setInvokableClass(VoidInvokable.class);
+		}
 
 		for (JobVertex map : maps) {
 			map.setSelectivity(0.5);
