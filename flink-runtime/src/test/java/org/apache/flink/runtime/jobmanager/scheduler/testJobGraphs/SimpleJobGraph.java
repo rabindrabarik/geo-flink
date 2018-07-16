@@ -1,4 +1,4 @@
-package org.apache.flink.runtime.jobmanager.scheduler.jobGraphs;
+package org.apache.flink.runtime.jobmanager.scheduler.testJobGraphs;
 
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
@@ -13,8 +13,8 @@ import java.util.Set;
 
 /**
  * A Job Graph that resembles 3 inputs, each followed by a map tasks, all aggregated by a reduce task.
- * */
-public class SimpleJobGraph {
+ */
+public class SimpleJobGraph extends TestJobGraph {
 
 	private Set<JobVertex> vertices = new HashSet<>();
 
@@ -27,6 +27,9 @@ public class SimpleJobGraph {
 	private JobGraph jobGraph;
 
 	public SimpleJobGraph(int mapTasks) {
+
+		params = new Object[1];
+		params[0] = mapTasks;
 
 		inputs = new ArrayList<>();
 		maps = new ArrayList<>();
@@ -52,10 +55,10 @@ public class SimpleJobGraph {
 		vertices.add(reduce);
 
 		for (JobVertex vertex : vertices) {
-			if(vertex.getParallelism() < 1) {
+			if (vertex.getParallelism() < 1) {
 				vertex.setParallelism(1);
 			}
-			if(vertex.getMaxParallelism() < 1) {
+			if (vertex.getMaxParallelism() < 1) {
 				vertex.setMaxParallelism(4);
 			}
 		}

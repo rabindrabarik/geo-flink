@@ -5,15 +5,15 @@ import org.junit.Test;
 
 public class SchedulingDecisionWriterTest {
 
-	private SchedulingDecisionWriter writer;
+	private TestOutputWriter writer;
 
 	@Before
 	public void setup() {
-		writer = new SchedulingDecisionWriter("test-csv.csv");
+		writer = new TestOutputWriter("test-csv.csv");
 	}
 
 	@Test
 	public void write() {
-		writer.write(new SchedulingDecision(0.0, 0.0, "aScheduler", "aJobGraph", "anInstanceSet"));
+		writer.write(new SchedulingDecision(0.0, 0.0, "aScheduler", "aJobGraph", "anInstanceSet", 1L));
 	}
 }

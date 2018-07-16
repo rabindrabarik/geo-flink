@@ -309,6 +309,12 @@ under the License.
 			<systemPath>/home/requiel/gitRepo/flink/gurobi/gurobi.jar</systemPath>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-csv</artifactId>
+			<version>1.5</version>
+		</dependency>
+
 	</dependencies>
 
 	<!-- Dependency Management to converge transitive dependency versions -->

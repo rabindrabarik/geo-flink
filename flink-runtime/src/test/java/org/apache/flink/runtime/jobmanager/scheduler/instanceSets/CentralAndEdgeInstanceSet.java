@@ -10,12 +10,17 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class CentralAndEdgeInstanceSet {
+public class CentralAndEdgeInstanceSet extends InstanceSet {
 	private final Set<Instance> instanceSet = new HashSet<>();
 	private final Map<GeoLocation, Instance> edgeClouds = new HashMap<>();
 	private final Instance centralCloud;
 
 	public CentralAndEdgeInstanceSet(int numEdgeClouds, int centralSlots, int eachEdgeSlots) {
+		params = new Object[3];
+		params[0] = numEdgeClouds;
+		params[1] = centralSlots;
+		params[2] = eachEdgeSlots;
+
 		for (int i = 0; i < numEdgeClouds; i++) {
 			GeoLocation edgeLocation = new GeoLocation("edge_cloud_" + i);
 			Instance edgeInstance = SchedulerTestUtils.getRandomInstance(eachEdgeSlots, AckingDummyActorGateway.INSTANCE, edgeLocation);
@@ -27,7 +32,7 @@ public class CentralAndEdgeInstanceSet {
 		centralCloud = centralInstance;
 	}
 
-	public Set<Instance> getInstanceSet() {
+	public Set<Instance> getInstances() {
 		return instanceSet;
 	}
 

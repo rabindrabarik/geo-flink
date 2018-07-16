@@ -1,34 +1,23 @@
 package org.apache.flink.runtime.jobmanager.scheduler;
 
-import org.apache.flink.runtime.clusterframework.types.GeoLocation;
-import org.apache.flink.runtime.instance.AckingDummyActorGateway;
-import org.apache.flink.runtime.instance.Instance;
-import org.apache.flink.runtime.jobgraph.JobGraph;
-import org.apache.flink.runtime.jobmanager.scheduler.jobGraphs.SimpleJobGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.instanceSets.DistributedInstances;
+import org.apache.flink.runtime.jobmanager.scheduler.instanceSets.InstanceSet;
 import org.apache.flink.runtime.jobmanager.scheduler.schedulingDecisionFramework.SchedulingDecisionTestFramework;
-
-import java.util.HashSet;
-import java.util.Set;
+import org.apache.flink.runtime.jobmanager.scheduler.testJobGraphs.SimpleJobGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.testJobGraphs.TestJobGraph;
 
 public class SimpleJobGraphSchedulingDecisionTest extends SchedulingDecisionTestFramework {
 
 	private final SimpleJobGraph simpleJobGraph = new SimpleJobGraph(4);
-	private final Set<Instance> instanceSet = new HashSet<>();
+	private final DistributedInstances instanceSet = new DistributedInstances(4);
 
-
-	public SimpleJobGraphSchedulingDecisionTest() {
-		for(int i = 0; i < 4; i ++) {
-			instanceSet.add(SchedulerTestUtils.getRandomInstance(4, AckingDummyActorGateway.INSTANCE, new GeoLocation("location_" + i)));
-		}
+	@Override
+	protected TestJobGraph jobGraph() {
+		return simpleJobGraph;
 	}
 
 	@Override
-	protected JobGraph jobGraph() {
-		return simpleJobGraph.getJobGraph();
-	}
-
-	@Override
-	protected Set<Instance> instanceSet() {
+	protected InstanceSet instanceSet() {
 		return instanceSet;
 	}
 }
