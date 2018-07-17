@@ -38,12 +38,12 @@ import org.apache.flink.streaming.util.TestStreamEnvironment;
 import org.apache.flink.util.ExceptionUtils;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.Preconditions;
-
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -66,19 +66,20 @@ public class MiniClusterResource extends ExternalResource {
 
 	private final MiniClusterType miniClusterType;
 
-	private JobExecutorService jobExecutorService;
+	protected JobExecutorService jobExecutorService;
 
-	private final boolean enableClusterClient;
+	protected final boolean enableClusterClient;
 
-	private ClusterClient<?> clusterClient;
+	protected ClusterClient<?> clusterClient;
 
-	private Configuration restClusterClientConfig;
+	protected Configuration restClusterClientConfig;
 
 	private int numberSlots = -1;
 
 	private TestEnvironment executionEnvironment;
 
-	private int webUIPort = -1;
+	protected int webUIPort = -1;
+
 
 	public MiniClusterResource(final MiniClusterResourceConfiguration miniClusterResourceConfiguration) {
 		this(miniClusterResourceConfiguration, false);
@@ -187,7 +188,7 @@ public class MiniClusterResource extends ExternalResource {
 		}
 	}
 
-	private void startJobExecutorService(MiniClusterType miniClusterType) throws Exception {
+	protected void startJobExecutorService(MiniClusterType miniClusterType) throws Exception {
 		switch (miniClusterType) {
 			case LEGACY:
 				startLegacyMiniCluster();
@@ -201,26 +202,41 @@ public class MiniClusterResource extends ExternalResource {
 	}
 
 	private void startLegacyMiniCluster() throws Exception {
-		final Configuration configuration = new Configuration(miniClusterResourceConfiguration.getConfiguration());
-		configuration.setInteger(ConfigConstants.LOCAL_NUMBER_TASK_MANAGER, miniClusterResourceConfiguration.getNumberTaskManagers());
-		configuration.setInteger(TaskManagerOptions.NUM_TASK_SLOTS, miniClusterResourceConfiguration.getNumberSlotsPerTaskManager());
-		configuration.setString(CoreOptions.TMP_DIRS, temporaryFolder.newFolder().getAbsolutePath());
+		final Configuration configuration = newLegacyMiniClusterConfiguration();
 
 		final LocalFlinkMiniCluster flinkMiniCluster = TestBaseUtils.startCluster(
 			configuration,
 			!enableClusterClient); // the cluster client only works if separate actor systems are used
 
 		jobExecutorService = flinkMiniCluster;
+
 		if (enableClusterClient) {
-			clusterClient = new StandaloneClusterClient(configuration, flinkMiniCluster.highAvailabilityServices(), true);
+			clusterClient = makeClusterClient(configuration, flinkMiniCluster);
 		}
-		Configuration restClientConfig = new Configuration();
-		restClientConfig.setInteger(JobManagerOptions.PORT, flinkMiniCluster.getLeaderRPCPort());
-		this.restClusterClientConfig = new UnmodifiableConfiguration(restClientConfig);
+
+		this.restClusterClientConfig = newLegacyMiniClusterRestClientConfiguration(flinkMiniCluster);
 
 		if (flinkMiniCluster.webMonitor().isDefined()) {
 			webUIPort = flinkMiniCluster.webMonitor().get().getServerPort();
 		}
+	}
+
+	protected Configuration newLegacyMiniClusterRestClientConfiguration(LocalFlinkMiniCluster flinkMiniCluster) {
+		Configuration restClientConfig = new Configuration();
+		restClientConfig.setInteger(JobManagerOptions.PORT, flinkMiniCluster.getLeaderRPCPort());
+		return new UnmodifiableConfiguration(restClientConfig);
+	}
+
+	protected ClusterClient<?> makeClusterClient(Configuration configuration, LocalFlinkMiniCluster flinkMiniCluster) {
+		return new StandaloneClusterClient(configuration, flinkMiniCluster.highAvailabilityServices(), true);
+	}
+
+	protected Configuration newLegacyMiniClusterConfiguration() throws IOException {
+		final Configuration configuration = new Configuration(miniClusterResourceConfiguration.getConfiguration());
+		configuration.setInteger(ConfigConstants.LOCAL_NUMBER_TASK_MANAGER, miniClusterResourceConfiguration.getNumberTaskManagers());
+		configuration.setInteger(TaskManagerOptions.NUM_TASK_SLOTS, miniClusterResourceConfiguration.getNumberSlotsPerTaskManager());
+		configuration.setString(CoreOptions.TMP_DIRS, temporaryFolder.newFolder().getAbsolutePath());
+		return configuration;
 	}
 
 	private void startMiniCluster() throws Exception {
@@ -325,6 +341,8 @@ public class MiniClusterResource extends ExternalResource {
 	 */
 	public enum MiniClusterType {
 		LEGACY,
-		NEW
+		NEW,
+		LEGACY_SPY_GEO,
+		LEGACY_SPY_FLINK
 	}
 }

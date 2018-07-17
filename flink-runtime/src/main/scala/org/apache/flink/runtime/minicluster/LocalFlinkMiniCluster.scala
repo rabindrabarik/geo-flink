@@ -30,7 +30,7 @@ import org.apache.flink.runtime.blob.BlobServer
 import org.apache.flink.runtime.checkpoint.CheckpointRecoveryFactory
 import org.apache.flink.runtime.clusterframework.FlinkResourceManager
 import org.apache.flink.runtime.clusterframework.standalone.StandaloneResourceManager
-import org.apache.flink.runtime.clusterframework.types.{ResourceID, ResourceIDRetrievable}
+import org.apache.flink.runtime.clusterframework.types.{GeoLocation, ResourceID, ResourceIDRetrievable}
 import org.apache.flink.runtime.execution.librarycache.BlobLibraryCacheManager
 import org.apache.flink.runtime.executiongraph.restart.RestartStrategyFactory
 import org.apache.flink.runtime.highavailability.{HighAvailabilityServices, HighAvailabilityServicesUtils}
@@ -69,10 +69,20 @@ import scala.concurrent.{Await, ExecutionContext}
 class LocalFlinkMiniCluster(
     userConfiguration: Configuration,
     highAvailabilityServices: HighAvailabilityServices,
+    scheduler : Scheduler,
     singleActorSystem: Boolean) extends FlinkMiniCluster(
   userConfiguration,
   highAvailabilityServices,
   singleActorSystem) {
+
+  def this(userConfiguration: Configuration,
+           highAvailabilityServices: HighAvailabilityServices,
+           singleActorSystem: Boolean) = {
+    this(userConfiguration,
+      highAvailabilityServices,
+      null,
+      singleActorSystem)
+  }
 
   def this(userConfiguration: Configuration, useSingleActorSystem: Boolean) = {
     this(
@@ -80,6 +90,16 @@ class LocalFlinkMiniCluster(
        HighAvailabilityServicesUtils.createAvailableOrEmbeddedServices(
          userConfiguration,
          ExecutionContext.global),
+      useSingleActorSystem)
+  }
+
+  def this(userConfiguration: Configuration, scheduler: Scheduler, useSingleActorSystem: Boolean) = {
+    this(
+      userConfiguration,
+      HighAvailabilityServicesUtils.createAvailableOrEmbeddedServices(
+        userConfiguration,
+        ExecutionContext.global),
+      scheduler,
       useSingleActorSystem)
   }
 
@@ -145,7 +165,8 @@ class LocalFlinkMiniCluster(
       futureExecutor,
       ioExecutor,
       highAvailabilityServices.createBlobStore(),
-      metricRegistryOpt.get)
+      metricRegistryOpt.get,
+      this.scheduler)
 
     val archive = system.actorOf(
       getArchiveProps(
@@ -200,7 +221,7 @@ class LocalFlinkMiniCluster(
   }
 
   override def startTaskManager(index: Int, system: ActorSystem): ActorRef = {
-    val config = originalConfiguration.clone()
+    val config = assignSlotsFromIndex(originalConfiguration.clone(), index)
 
     val rpcPortRange = config.getString(TaskManagerOptions.RPC_PORT)
 
@@ -237,12 +258,13 @@ class LocalFlinkMiniCluster(
       localExecution)
 
     //use fromConfigurationAndLocation to specify a location
-    val taskManagerServices = TaskManagerServices.fromConfiguration(
+    val taskManagerServices = TaskManagerServices.fromConfigurationAndGeoLocation(
       taskManagerServicesConfiguration,
       resourceID,
       ioExecutor,
       EnvironmentInformation.getSizeOfFreeHeapMemoryWithDefrag,
-      EnvironmentInformation.getMaxJvmHeapMemory)
+      EnvironmentInformation.getMaxJvmHeapMemory,
+      new GeoLocation(config.getString(GeoSchedulerTestingUtilsOptions.geoLocationForTaskManagerAtIndex(index))))
 
     val taskManagerMetricGroup = MetricUtils.instantiateTaskManagerMetricGroup(
       metricRegistryOpt.get,
@@ -261,6 +283,16 @@ class LocalFlinkMiniCluster(
       taskManagerMetricGroup)
 
     system.actorOf(props, taskManagerActorName)
+  }
+
+  def assignSlotsFromIndex(configuration: Configuration, index: Int) : Configuration = {
+    if(configuration.contains(GeoSchedulerTestingUtilsOptions.geoLocationForTaskManagerAtIndex(index)) &&
+      configuration.contains(GeoSchedulerTestingUtilsOptions.slotsForTaskManagerAtIndex(index))) {
+      configuration.setInteger(TaskManagerOptions.NUM_TASK_SLOTS, configuration.getInteger(GeoSchedulerTestingUtilsOptions.slotsForTaskManagerAtIndex(index)))
+      configuration
+    } else {
+      configuration
+    }
   }
 
   //------------------------------------------------------------------------------------------------

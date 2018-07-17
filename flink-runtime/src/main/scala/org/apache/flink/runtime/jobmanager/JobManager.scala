@@ -124,7 +124,7 @@ class JobManager(
     protected val futureExecutor: ScheduledExecutorService,
     protected val ioExecutor: Executor,
     protected val instanceManager: InstanceManager,
-    protected val scheduler: FlinkAbstractScheduler,
+    protected val scheduler: FlinkScheduler,
     protected val blobServer: BlobServer,
     protected val libraryCacheManager: BlobLibraryCacheManager,
     protected val archive: ActorRef,
@@ -2423,7 +2423,7 @@ object JobManager {
                                   blobStore: BlobStore,
                                   metricRegistry: FlinkMetricRegistry) :
   (InstanceManager,
-    FlinkAbstractScheduler,
+    FlinkScheduler,
     BlobServer,
     BlobLibraryCacheManager,
     RestartStrategyFactory,
@@ -2459,9 +2459,9 @@ object JobManager {
       ioExecutor: Executor,
       blobStore: BlobStore,
       metricRegistry: FlinkMetricRegistry,
-      injectedScheduler: FlinkAbstractScheduler) :
+      injectedScheduler: FlinkScheduler) :
     (InstanceManager,
-      FlinkAbstractScheduler,
+      FlinkScheduler,
       BlobServer,
       BlobLibraryCacheManager,
       RestartStrategyFactory,
@@ -2501,7 +2501,7 @@ object JobManager {
 
     var blobServer: BlobServer = null
     var instanceManager: InstanceManager = null
-    var scheduler: FlinkAbstractScheduler = null
+    var scheduler: FlinkScheduler = null
     var libraryCacheManager: BlobLibraryCacheManager = null
 
     try {
@@ -2720,7 +2720,7 @@ object JobManager {
     futureExecutor: ScheduledExecutorService,
     ioExecutor: Executor,
     instanceManager: InstanceManager,
-    scheduler: FlinkAbstractScheduler,
+    scheduler: FlinkScheduler,
     blobServer: BlobServer,
     libraryCacheManager: LibraryCacheManager,
     archive: ActorRef,

@@ -1,20 +1,25 @@
 package testingFrameworks;
 
-import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.GeoSchedulerTestingUtilsOptions;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
+import org.apache.flink.test.util.MiniClusterResource;
+import org.apache.flink.test.util.TestEnvironment;
 import org.apache.flink.util.TestLogger;
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spies.SpyableFlinkScheduler;
 import spies.SpyableGeoScheduler;
+import spies.SpyableScheduler;
 import testOutputWriter.TestOutputWriter;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * This tests logs the slot usages after scheduling a DataStream
@@ -30,14 +35,67 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 	@Parameterized.Parameters(name = "scheduling via: {0}")
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][]{
-			{new SpyableGeoScheduler(TestingUtils.defaultExecutor())}, {new SpyableFlinkScheduler(TestingUtils.defaultExecutor())}
+			{new SpyableGeoScheduler(TestingUtils.defaultExecutor()), MiniClusterResource.MiniClusterType.LEGACY_SPY_GEO},
+			{new SpyableFlinkScheduler(TestingUtils.defaultExecutor()), MiniClusterResource.MiniClusterType.LEGACY_SPY_FLINK}
 		});
 	}
 
-	@Parameterized.Parameter(0)
-	public Scheduler scheduler;
+	public static Configuration makeLocationSlotConfiguration(Map<String, Integer> geoLocationSlotMap) {
+		Configuration configuration = new Configuration();
+		int taskManagerIndex = 0;
+		for (Map.Entry<String, Integer> locationAndSlots : geoLocationSlotMap.entrySet()) {
+			configuration.setInteger(GeoSchedulerTestingUtilsOptions.slotsForTaskManagerAtIndex(taskManagerIndex), locationAndSlots.getValue());
+			configuration.setString(GeoSchedulerTestingUtilsOptions.geoLocationForTaskManagerAtIndex(taskManagerIndex), locationAndSlots.getKey());
+			taskManagerIndex++;
+		}
+		return configuration;
+	}
 
-	@Test
-	public void test() throws Exception {
+	public SpyableScheduler scheduler;
+
+	public MiniClusterResource.MiniClusterType miniClusterType;
+
+	public int numberTaskManagers;
+
+	public int numberSlotsPerTaskManager;
+
+	public SchedulerInjectingMiniClusterResource miniClusterResource;
+
+	public DataStreamSchedulingTestFramework(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
+		this.scheduler = scheduler;
+		this.miniClusterType = miniClusterType;
+		this.numberSlotsPerTaskManager = getSlotAverage(getGeoLocationSlotMap());
+		this.numberTaskManagers = getGeoLocationSlotMap().isEmpty() ? 1 : getGeoLocationSlotMap().size();
+	}
+
+	private int getSlotAverage(Map<String, Integer> geoLocationSlotMap) {
+		int sum = 0;
+
+		if(geoLocationSlotMap.isEmpty()) {
+			return 1;
+		}
+
+		for (Integer slots : geoLocationSlotMap.values()) {
+			sum += slots;
+		}
+		return sum / geoLocationSlotMap.size();
+	}
+
+	/**
+	 * @return a map from a geo location name to the number of slots to provide in that location. For performance reasons,
+	 * make this a getter of a cached field, instead of recalculating it.
+	 */
+	public abstract Map<String, Integer> getGeoLocationSlotMap();
+
+	@Rule
+	public SchedulerInjectingMiniClusterResource makeMiniClusterResource() {
+		return new SchedulerInjectingMiniClusterResource(
+			new MiniClusterResource.MiniClusterResourceConfiguration(makeLocationSlotConfiguration(getGeoLocationSlotMap()), numberTaskManagers, numberSlotsPerTaskManager),
+			scheduler,
+			miniClusterType);
+	}
+
+	protected TestEnvironment getEnvironment() {
+		return miniClusterResource.getTestEnvironment();
 	}
 }

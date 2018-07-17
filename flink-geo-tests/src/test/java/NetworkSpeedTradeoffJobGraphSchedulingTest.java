@@ -11,12 +11,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class NetworkSpeedTradeoffSchedulingDecisionTest extends JobGraphSchedulingTestFramework {
+public class NetworkSpeedTradeoffJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
 	private final SimpleJobGraph jobGraph = new SimpleJobGraph(4);
 	private final CentralAndEdgeInstances instances = new CentralAndEdgeInstances(4, 20, 2);
 	private final Map<JobVertex, GeoLocation> placedVertices = new HashMap<>();
 
-	public NetworkSpeedTradeoffSchedulingDecisionTest() {
+	public NetworkSpeedTradeoffJobGraphSchedulingTest() {
 		fillPlacedVertices();
 	}
 

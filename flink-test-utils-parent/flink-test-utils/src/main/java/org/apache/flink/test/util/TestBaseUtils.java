@@ -18,6 +18,12 @@
 
 package org.apache.flink.test.util;
 
+import akka.actor.ActorRef;
+import akka.dispatch.Futures;
+import akka.pattern.Patterns;
+import akka.util.Timeout;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.configuration.AkkaOptions;
@@ -30,19 +36,16 @@ import org.apache.flink.configuration.WebOptions;
 import org.apache.flink.core.testutils.CommonTestUtils;
 import org.apache.flink.runtime.messages.TaskManagerMessages;
 import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
-import org.apache.flink.util.TestLogger;
-
 import org.apache.flink.shaded.netty4.io.netty.handler.codec.http.HttpResponseStatus;
-
-import akka.actor.ActorRef;
-import akka.dispatch.Futures;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
+import org.apache.flink.util.TestLogger;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.concurrent.Await;
+import scala.concurrent.ExecutionContext;
+import scala.concurrent.ExecutionContext$;
+import scala.concurrent.Future;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -72,12 +75,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import scala.concurrent.Await;
-import scala.concurrent.ExecutionContext;
-import scala.concurrent.ExecutionContext$;
-import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
 
 import static org.apache.flink.util.Preconditions.checkArgument;
 import static org.junit.Assert.assertEquals;
@@ -143,6 +140,16 @@ public class TestBaseUtils extends TestLogger {
 		Configuration config,
 		boolean singleActorSystem) throws Exception {
 
+		cleanStartClusterConfig(config);
+
+		LocalFlinkMiniCluster cluster =  new LocalFlinkMiniCluster(config, singleActorSystem);
+
+		cluster.start();
+
+		return cluster;
+	}
+
+	public static void cleanStartClusterConfig(Configuration config) throws IOException {
 		if (!config.contains(WebOptions.LOG_PATH) || !config.containsKey(ConfigConstants.TASK_MANAGER_LOG_PATH_KEY)) {
 			logDir = File.createTempFile("TestBaseUtils-logdir", null);
 			Assert.assertTrue("Unable to delete temp file", logDir.delete());
@@ -178,12 +185,6 @@ public class TestBaseUtils extends TestLogger {
 		if (!config.contains(TaskManagerOptions.MANAGED_MEMORY_SIZE)) {
 			config.setLong(TaskManagerOptions.MANAGED_MEMORY_SIZE, TASK_MANAGER_MEMORY_SIZE);
 		}
-
-		LocalFlinkMiniCluster cluster =  new LocalFlinkMiniCluster(config, singleActorSystem);
-
-		cluster.start();
-
-		return cluster;
 	}
 
 	public static void stopCluster(LocalFlinkMiniCluster executor, FiniteDuration timeout) throws Exception {

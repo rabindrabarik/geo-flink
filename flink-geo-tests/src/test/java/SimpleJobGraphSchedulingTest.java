@@ -4,7 +4,7 @@ import writableTypes.SimpleJobGraph;
 import writableTypes.TestInstanceSet;
 import writableTypes.TestJobGraph;
 
-public class SimpleJobGraphSchedulingDecisionTest extends JobGraphSchedulingTestFramework {
+public class SimpleJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
 
 	private final SimpleJobGraph simpleJobGraph = new SimpleJobGraph(4);
 	private final DistributedInstances instanceSet = new DistributedInstances(4);
