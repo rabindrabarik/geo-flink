@@ -1346,6 +1346,24 @@ public class DataStream<T> {
 	}
 
 	/**
+	 * @return The selectivity of the underlying operator, i.e. the amount of data that will come out this datastream,
+	 * for every tuple that comes in. Specifying a selectivity that is close to the real-world one will lead to
+	 * better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 */
+	public double getSelectivity() {
+		return transformation.getSelectivity();
+	}
+
+	/**
+	 * Sets the selectivity of the underlying operator, i.e. the amount of data that will come out this datastream,
+	 * for every tuple that comes in. Specifying a selectivity that is close to the real-world one will lead to
+	 * better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 */
+	public void setSelectivity(double selectivity) {
+		transformation.setSelectivity(selectivity);
+	}
+
+	/**
 	 * Adds the given sink to this DataStream. Only streams with sinks added
 	 * will be executed once the {@link StreamExecutionEnvironment#execute()}
 	 * method is called.
