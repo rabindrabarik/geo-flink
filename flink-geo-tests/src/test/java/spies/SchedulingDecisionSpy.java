@@ -7,6 +7,7 @@ import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.ExecutionVertex;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,72 +25,86 @@ public class SchedulingDecisionSpy {
 
 	private final static Logger log = LoggerFactory.getLogger(SchedulingDecisionSpy.class);
 
-	private final Map<ExecutionVertex, LogicalSlot> assignements = Collections.synchronizedMap(new HashMap<>());
+	/**
+	 * A map storing where each execution vertex was scheduled.
+	 */
+	private final Map<ExecutionVertex, LogicalSlot> schedulingDecisions = Collections.synchronizedMap(new HashMap<>());
 
 	/**
-	 * The set of vertices that are known to be in the ExecutionGraph, cached to avoid iterations
+	 * The vertices that are considered as already placed by the {@link GeoScheduler}.
 	 */
-	private final Set<ExecutionVertex> knownVertices = new HashSet<>();
+	private final Map<JobVertex, GeoLocation> placedVertices = new HashMap<>();
 
 	/**
-	 * This spy will only accept assignements about this graph
+	 * The time it took to solve the model associated with the execution graph (in seconds).
 	 */
-	private final ExecutionGraph graph;
-
-	private final Map<JobVertex, GeoLocation> placedVertices;
+	private Map<ExecutionGraph, Double> modelSolveTimes = new HashMap<>();
 
 	/**
-	 * @param graph the ExecutionGraph to track the assignments of
-	 */
-	public SchedulingDecisionSpy(ExecutionGraph graph, Map<JobVertex, GeoLocation> placedVertices) {
-		this.graph = graph;
-		this.placedVertices = placedVertices == null ? new HashMap<>() : placedVertices;
+	 * All the {@link ExecutionGraph} this spy knows scheduling decisions about.
+	 * */
+	private Set<ExecutionGraph> executionGraphs = new HashSet<>();
+
+	/**
+	 * Adds vertices that are considered as already placed by the {@link GeoScheduler}.
+	 * */
+	public void addPlacedVertices(Map<JobVertex, GeoLocation> placedVertices) {
+		this.placedVertices.putAll(placedVertices);
 	}
 
-	public GeoLocation getGeoLocationFor(ExecutionVertex vertex) {
-		return assignements.get(vertex).getTaskManagerLocation().getGeoLocation();
+	/**
+	 * Returns where the execution vertex was scheduled.
+	 */
+	public GeoLocation getSchedulingDecisionFor(ExecutionVertex vertex) {
+		return schedulingDecisions.get(vertex).getTaskManagerLocation().getGeoLocation();
 	}
 
 	/**
-	 * Tell this spy where the slot has been assigned.
+	 * Tell this spy where the task has been scheduled.
 	 */
-	public void addAssignementFor(ExecutionVertex vertex, LogicalSlot slot) {
-		if (!isInGraph(vertex)) {
-			throw new IllegalArgumentException("The vertex is not in the graph this SchedulingDecisionSpy was initialised with");
+	public void setSchedulingDecisionFor(ExecutionVertex vertex, LogicalSlot slot) {
+		executionGraphs.add(vertex.getExecutionGraph());
+		schedulingDecisions.put(vertex, slot);
+	}
+
+	/**
+	 * Tell this spy how long it took to solve the executionGraph model (in seconds).
+	 */
+	public void setModelSolveTime(ExecutionGraph executionGraph, double modelSolveTime) {
+		modelSolveTimes.put(executionGraph, modelSolveTime);
+	}
+
+	/**
+	 * @return The time it took to solve the model associated with the execution graph (in seconds).
+	 * */
+	public double getModelSolveTime(ExecutionGraph executionGraph) {
+		if(modelSolveTimes.containsKey(executionGraph)) {
+			return modelSolveTimes.get(executionGraph);
+		} else {
+			return 0;
 		}
-
-		assignements.put(vertex, slot);
-	}
-
-	private boolean isInGraph(ExecutionVertex vertex) {
-		if (knownVertices.contains(vertex)) {
-			return true;
-		}
-		boolean isInGraph = false;
-		Iterator<ExecutionVertex> graphIterator = graph.getAllExecutionVertices().iterator();
-		while (graphIterator.hasNext() && !isInGraph) {
-			ExecutionVertex otherVertex = graphIterator.next();
-			if (otherVertex.equals(vertex)) {
-				isInGraph = true;
-				knownVertices.add(vertex);
-			}
-		}
-		return isInGraph;
 	}
 
 	/**
-	 * Calculate the network cost on current assignements.
+	 * @return all the {@link ExecutionGraph} this spy knows scheduling decisions about.
+	 */
+	public Set<ExecutionGraph> getGraphs() {
+		return executionGraphs;
+	}
+
+	/**
+	 * Calculate the network cost on current schedulingDecisions.
 	 * For this method to return the correct value, all the scheduling decisions must be communicated before running it.
 	 * <p>
 	 * The cost is calculated as:
 	 * For all incoming edge of each vertex, check where the producer is and add the correct fraction of the edge weight to the network cost
 	 * if the producer is not on the same geo location.
 	 */
-	public double calculateNetworkCost() {
+	public double calculateNetworkCost(ExecutionGraph graph) {
 		double networkCost = 0;
 
 		for (ExecutionVertex consumer : graph.getAllExecutionVertices()) {
-			LogicalSlot consumerAssignment = assignements.get(consumer);
+			LogicalSlot consumerAssignment = schedulingDecisions.get(consumer);
 			if (consumerAssignment == null) {
 				log.error("For this method to return the correct value," +
 					" all the scheduling decisions must be communicated before running it. " +
@@ -116,7 +130,7 @@ public class SchedulingDecisionSpy {
 				for (ExecutionEdge inputEdgeToConsumer : inputEdgesToConsumer) {
 					//for each parallel ExecutionEdge of that input get where the ExecutionVertex they come from is placed
 					ExecutionVertex producer = inputEdgeToConsumer.getSource().getProducer();
-					LogicalSlot producerAssignment = assignements.get(producer);
+					LogicalSlot producerAssignment = schedulingDecisions.get(producer);
 					if (producerAssignment == null) {
 						log.error("For this method to return the correct value," +
 							" all the scheduling decisions must be communicated before running it. " +
@@ -143,13 +157,13 @@ public class SchedulingDecisionSpy {
 	}
 
 	/**
-	 * Calculate the execution speed on current assignements.
+	 * Calculate the execution speed on current schedulingDecisions.
 	 * For this method to return the correct value, all the scheduling decisions must be communicated before running it.
 	 * <p>
 	 * The time is calculated as:
 	 * For all the JobVertex, sum how much they are parallelised and multiply by their weight. (The higher the result the faster the application).
 	 */
-	public double calculateExecutionSpeed() {
+	public double calculateExecutionSpeed(ExecutionGraph graph) {
 		double executionSpeed = 0;
 
 		for (JobVertexID jobVertexID : graph.getAllVertices().keySet()) {
@@ -164,7 +178,7 @@ public class SchedulingDecisionSpy {
 	public String getAssignementsString() {
 		String out = "";
 
-		for (Map.Entry<ExecutionVertex, LogicalSlot> entry : assignements.entrySet()) {
+		for (Map.Entry<ExecutionVertex, LogicalSlot> entry : schedulingDecisions.entrySet()) {
 			out += entry.toString() + "\n";
 		}
 

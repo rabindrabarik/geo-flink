@@ -2,6 +2,8 @@ package spies;
 
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.SlotProfile;
+import org.apache.flink.runtime.executiongraph.ExecutionGraph;
+import org.apache.flink.runtime.executiongraph.OptimisationModelSolution;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.ScheduledUnit;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
@@ -31,14 +33,23 @@ public class SpyableGeoScheduler extends GeoScheduler implements SpyableSchedule
 
 	@Override
 	public CompletableFuture<LogicalSlot> allocateSlot(SlotRequestId slotRequestId, ScheduledUnit task, boolean allowQueued, SlotProfile slotProfile, Time allocationTimeout) {
-		CompletableFuture <LogicalSlot> scheduledSlotFuture = super.allocateSlot(slotRequestId, task, allowQueued, slotProfile, allocationTimeout);
+		CompletableFuture<LogicalSlot> scheduledSlotFuture = super.allocateSlot(slotRequestId, task, allowQueued, slotProfile, allocationTimeout);
 		scheduledSlotFuture.whenCompleteAsync((value, exception) -> {
-			if(value != null) {
-				for(SchedulingDecisionSpy spy : spies) {
-					spy.addAssignementFor(task.getTaskToExecute().getVertex(), value);
+			if (value != null) {
+				for (SchedulingDecisionSpy spy : spies) {
+					spy.setSchedulingDecisionFor(task.getTaskToExecute().getVertex(), value);
 				}
 			}
 		});
 		return scheduledSlotFuture;
+	}
+
+	@Override
+	public void addGraphSolution(ExecutionGraph executionGraph, OptimisationModelSolution solution) {
+		super.addGraphSolution(executionGraph, solution);
+		for (SchedulingDecisionSpy spy : spies) {
+			spy.setModelSolveTime(executionGraph, solution.getExecutionTime());
+
+		}
 	}
 }

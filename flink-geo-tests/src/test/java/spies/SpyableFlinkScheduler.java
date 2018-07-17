@@ -35,7 +35,7 @@ public class SpyableFlinkScheduler extends Scheduler implements SpyableScheduler
 		scheduledSlotFuture.whenCompleteAsync((value, exception) -> {
 			if(value != null) {
 				for(SchedulingDecisionSpy spy : spies) {
-					spy.addAssignementFor(task.getTaskToExecute().getVertex(), value);
+					spy.setSchedulingDecisionFor(task.getTaskToExecute().getVertex(), value);
 				}
 			}
 		});

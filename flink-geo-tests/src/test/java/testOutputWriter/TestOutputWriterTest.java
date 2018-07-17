@@ -14,6 +14,6 @@ public class TestOutputWriterTest {
 
 	@Test
 	public void write() {
-		writer.write(new SchedulingDecision(0.0, 0.0, "aScheduler", "aJobGraph", "anInstanceSet", 1L));
+		writer.write(new TestOutputImpl(0.0, 0.0, "aScheduler", "aJobGraph", "anInstanceSet", 1L));
 	}
 }

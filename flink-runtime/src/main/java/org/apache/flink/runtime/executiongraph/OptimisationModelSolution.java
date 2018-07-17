@@ -17,12 +17,14 @@ public class OptimisationModelSolution {
 	private Map<JobVertex, Integer> parallelism;
 	private double networkCost;
 	private double executionTime;
+	private double modelExecutionTime;
 
-	public OptimisationModelSolution(Map<JobVertex, GeoLocation> placement, Map<JobVertex, Integer> parallelism, double networkCost, double executionTime) {
+	public OptimisationModelSolution(Map<JobVertex, GeoLocation> placement, Map<JobVertex, Integer> parallelism, double networkCost, double executionTime, double modelExecutionTime) {
 		this.placement = placement;
 		this.networkCost = networkCost;
 		this.executionTime = executionTime;
 		this.parallelism = parallelism;
+		this.modelExecutionTime = modelExecutionTime;
 	}
 
 	public static OptimisationModelSolution fromSolvedModel(GRBModel solvedModel, TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap, Map<JobVertex, GRBVar> parallelismVarMap, GRBVar executionTime, GRBVar networkCost) throws GRBException {
@@ -33,7 +35,7 @@ public class OptimisationModelSolution {
 		Map<JobVertex, GeoLocation> placement = makePlacementMap(placementVarMap);
 		Map<JobVertex, Integer> parallelism = makeParallelismMap(parallelismVarMap);
 
-		return new OptimisationModelSolution(placement, parallelism, networkCost.get(GRB.DoubleAttr.X), executionTime.get(GRB.DoubleAttr.X));
+		return new OptimisationModelSolution(placement, parallelism, networkCost.get(GRB.DoubleAttr.X), executionTime.get(GRB.DoubleAttr.X), solvedModel.get(GRB.DoubleAttr.Runtime));
 	}
 
 	private static Map<JobVertex, GeoLocation> makePlacementMap(TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap) throws GRBException {
@@ -72,6 +74,10 @@ public class OptimisationModelSolution {
 
 	public double getExecutionTime() {
 		return executionTime;
+	}
+
+	public double getModelExecutionTime() {
+		return modelExecutionTime;
 	}
 
 	@Override

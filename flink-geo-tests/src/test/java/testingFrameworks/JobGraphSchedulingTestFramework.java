@@ -18,7 +18,7 @@ import spies.SchedulingDecisionSpy;
 import spies.SpyableFlinkScheduler;
 import spies.SpyableGeoScheduler;
 import spies.SpyableScheduler;
-import testOutputWriter.SchedulingDecision;
+import testOutputWriter.TestOutputImpl;
 import testOutputWriter.TestOutputWriter;
 import writableTypes.TestInstanceSet;
 import writableTypes.TestJobGraph;
@@ -26,6 +26,7 @@ import writableTypes.TestJobGraph;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.flink.runtime.jobmanager.scheduler.SchedulerTestUtils.makeExecutionGraph;
@@ -39,7 +40,7 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 
 	private final static Logger log = LoggerFactory.getLogger(JobGraphSchedulingTestFramework.class);
 
-	private final static TestOutputWriter writer = new TestOutputWriter();
+	private final static TestOutputWriter<TestOutputImpl> writer = new TestOutputWriter<>();
 
 	@Parameterized.Parameters(name = "scheduling via: {0}")
 	public static Collection<Object[]> data() {
@@ -65,7 +66,7 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 	 * @return the vertices that are already placed in a geolocation
 	 */
 	protected Map<JobVertex, GeoLocation> placedVertices() {
-		return null;
+		return new HashMap<>();
 	}
 
 	@Test
@@ -87,7 +88,8 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 			null);
 
 
-		SchedulingDecisionSpy spy = new SchedulingDecisionSpy(executionGraph, placedVertices());
+		SchedulingDecisionSpy spy = new SchedulingDecisionSpy();
+		spy.addPlacedVertices(placedVertices());
 
 		spyableScheduler.addSchedulingDecisionSpy(spy);
 
@@ -104,20 +106,20 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 			System.out.println();
 		}
 
-		double networkCost = spy.calculateNetworkCost();
-		double executionSpeed = spy.calculateExecutionSpeed();
+		double networkCost = spy.calculateNetworkCost(executionGraph);
+		double executionSpeed = spy.calculateExecutionSpeed(executionGraph);
 
 		System.out.println("network cost: " + networkCost);
 		System.out.println("execution speed: " + executionSpeed);
 		System.out.println("\n\n");
 		System.out.println(spy.getAssignementsString());
 
-		writer.write(new SchedulingDecision(
+		writer.write(new TestOutputImpl(
 			networkCost,
 			executionSpeed,
 			scheduler.getClass().getSimpleName(),
 			jobGraph().getClassNameString(),
 			instanceSet().getClassNameString(),
-			System.currentTimeMillis() - initialTime));
+			Math.round(spy.getModelSolveTime(executionGraph) * 1000)));
 	}
 }
