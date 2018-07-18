@@ -33,6 +33,11 @@ public class StreamFlatMap<IN, OUT>
 
 	private transient TimestampedCollector<OUT> collector;
 
+	public StreamFlatMap(FlatMapFunction<IN, OUT> flatMapper, double selectivity) {
+		super(flatMapper, selectivity);
+		chainingStrategy = ChainingStrategy.ALWAYS;
+	}
+
 	public StreamFlatMap(FlatMapFunction<IN, OUT> flatMapper) {
 		super(flatMapper);
 		chainingStrategy = ChainingStrategy.ALWAYS;

@@ -51,6 +51,10 @@ public class ProcessOperator<IN, OUT>
 		chainingStrategy = ChainingStrategy.ALWAYS;
 	}
 
+	public ProcessOperator(ProcessFunction<IN, OUT> function, double selectivity) {
+		super(function, selectivity);
+	}
+
 	@Override
 	public void open() throws Exception {
 		super.open();

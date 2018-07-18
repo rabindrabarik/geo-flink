@@ -585,7 +585,7 @@ public class DataStream<T> {
 		TypeInformation<R> outType = TypeExtractor.getMapReturnTypes(clean(mapper), getType(),
 			Utils.getCallLocationName(), true);
 
-		return transform("Map", outType, new StreamMap<>(clean(mapper)), selectivity);
+		return transform("Map", outType, new StreamMap<>(clean(mapper), selectivity));
 	}
 
 	/**
@@ -611,7 +611,7 @@ public class DataStream<T> {
 		TypeInformation<R> outType = TypeExtractor.getMapReturnTypes(clean(mapper), getType(),
 				Utils.getCallLocationName(), true);
 
-		return transform("Map", outType, new StreamMap<>(clean(mapper)), 0.5d);
+		return transform("Map", outType, new StreamMap<>(clean(mapper), 0.5d));
 	}
 
 	/**
@@ -639,7 +639,7 @@ public class DataStream<T> {
 		TypeInformation<R> outType = TypeExtractor.getFlatMapReturnTypes(clean(flatMapper),
 			getType(), Utils.getCallLocationName(), true);
 
-		return transform("Flat Map", outType, new StreamFlatMap<>(clean(flatMapper)), 1d);
+		return transform("Flat Map", outType, new StreamFlatMap<>(clean(flatMapper), 1d));
 
 	}
 
@@ -670,7 +670,7 @@ public class DataStream<T> {
 		TypeInformation<R> outType = TypeExtractor.getFlatMapReturnTypes(clean(flatMapper),
 				getType(), Utils.getCallLocationName(), true);
 
-		return transform("Flat Map", outType, new StreamFlatMap<>(clean(flatMapper)), selectivity);
+		return transform("Flat Map", outType, new StreamFlatMap<>(clean(flatMapper), selectivity));
 
 	}
 
@@ -735,7 +735,7 @@ public class DataStream<T> {
 
 		ProcessOperator<T, R> operator = new ProcessOperator<>(clean(processFunction));
 
-		return transform("Process", outputType, operator, selectivity);
+		return transform("Process", outputType, operator);
 	}
 
 	/**
@@ -762,9 +762,9 @@ public class DataStream<T> {
 			ProcessFunction<T, R> processFunction,
 			TypeInformation<R> outputType) {
 
-		ProcessOperator<T, R> operator = new ProcessOperator<>(clean(processFunction));
+		ProcessOperator<T, R> operator = new ProcessOperator<>(clean(processFunction), 1d);
 
-		return transform("Process", outputType, operator, 1);
+		return transform("Process", outputType, operator);
 	}
 
 	/**
@@ -787,7 +787,7 @@ public class DataStream<T> {
 	 * @return The filtered DataStream.
 	 */
 	public SingleOutputStreamOperator<T> filter(FilterFunction<T> filter) {
-		return transform("Filter", getType(), new StreamFilter<>(clean(filter)), 0.5d);
+		return transform("Filter", getType(), new StreamFilter<>(clean(filter), 0.5d));
 
 	}
 
@@ -812,7 +812,7 @@ public class DataStream<T> {
 	 * @return The filtered DataStream.
 	 */
 	public SingleOutputStreamOperator<T> filter(FilterFunction<T> filter, double selectivity) {
-		return transform("Filter", getType(), new StreamFilter<>(clean(filter)), selectivity);
+		return transform("Filter", getType(), new StreamFilter<>(clean(filter), selectivity));
 
 	}
 
@@ -972,7 +972,7 @@ public class DataStream<T> {
 		// from the source go to each extraction operator round robin.
 		int inputParallelism = getTransformation().getParallelism();
 		ExtractTimestampsOperator<T> operator = new ExtractTimestampsOperator<>(clean(extractor));
-		return transform("ExtractTimestamps", getTransformation().getOutputType(), operator, operator.getSelectivity())
+		return transform("ExtractTimestamps", getTransformation().getOutputType(), operator)
 				.setParallelism(inputParallelism);
 	}
 
@@ -1019,7 +1019,7 @@ public class DataStream<T> {
 		TimestampsAndPeriodicWatermarksOperator<T> operator =
 				new TimestampsAndPeriodicWatermarksOperator<>(cleanedAssigner);
 
-		return transform("Timestamps/Watermarks", getTransformation().getOutputType(), operator, operator.getSelectivity())
+		return transform("Timestamps/Watermarks", getTransformation().getOutputType(), operator)
 				.setParallelism(inputParallelism);
 	}
 
@@ -1062,7 +1062,7 @@ public class DataStream<T> {
 		TimestampsAndPunctuatedWatermarksOperator<T> operator =
 				new TimestampsAndPunctuatedWatermarksOperator<>(cleanedAssigner);
 
-		return transform("Timestamps/Watermarks", getTransformation().getOutputType(), operator, operator.getSelectivity())
+		return transform("Timestamps/Watermarks", getTransformation().getOutputType(), operator)
 				.setParallelism(inputParallelism);
 	}
 
@@ -1252,55 +1252,11 @@ public class DataStream<T> {
 		return addSink(new OutputFormatSinkFunction<>(format));
 	}
 
-	/**
-	 * Method for passing user defined operators along with the type
-	 * information that will transform the DataStream.
-	 *
-	 * @param operatorName
-	 *            name of the operator, for logging purposes
-	 * @param outTypeInfo
-	 *            the output type of the operator
-	 * @param operator
-	 *            the object containing the transformation logic
-	 * @param selectivity
-	 * 			  The amount of data that will come out of the custom function,
-	 * 			  for every tuple that comes in. For example, if half of the
-	 * 			  tuples get discarded, a value of 0.5 may be appropriate.
-	 * 			  Specifying a selectivity that is close to the real-world one will lead to
-	 * 			  better scheduling decisions when using a {@link GeoScheduler} for scheduling.
-	 *
-	 * @param <R>
-	 *            type of the return stream
-	 * @return the data stream constructed
-	 */
-	@PublicEvolving
-	public <R> SingleOutputStreamOperator<R> transform(String operatorName, TypeInformation<R> outTypeInfo, OneInputStreamOperator<T, R> operator, double selectivity) {
-
-		// read the output type of the input Transform to coax out errors about MissingTypeInfo
-		transformation.getOutputType();
-
-		OneInputTransformation<T, R> resultTransform = new OneInputTransformation<>(
-				this.transformation,
-				operatorName,
-				operator,
-				outTypeInfo,
-				environment.getParallelism());
-
-		@SuppressWarnings({ "unchecked", "rawtypes" })
-		SingleOutputStreamOperator<R> returnStream = new SingleOutputStreamOperator(environment, resultTransform);
-
-		getExecutionEnvironment().addOperator(resultTransform);
-
-		return returnStream;
-	}
 
 	/**
 	 * Method for passing user defined operators along with the type
 	 * information that will transform the DataStream.
-	 * <p>
-	 * A default selectivity of 1 will be used. See {@link #transform(String, TypeInformation, OneInputStreamOperator, double)}
-	 * for a definition of selectivity. Specifying a selectivity that is close to the real-world one
-	 * will lead to better scheduling decisions when using a {@link GeoScheduler} for scheduling.
+	 *
 	 * @param operatorName
 	 *            name of the operator, for logging purposes
 	 * @param outTypeInfo

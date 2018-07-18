@@ -36,6 +36,11 @@ public class StreamMap<IN, OUT>
 		chainingStrategy = ChainingStrategy.ALWAYS;
 	}
 
+	public StreamMap(MapFunction<IN, OUT> mapper, double selectivity) {
+		super(mapper, selectivity);
+		chainingStrategy = ChainingStrategy.ALWAYS;
+	}
+
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
 		output.collect(element.replace(userFunction.map(element.getValue())));

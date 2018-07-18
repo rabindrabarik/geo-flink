@@ -162,7 +162,7 @@ public abstract class AbstractStreamOperator<OUT>
 	private long input2Watermark = Long.MIN_VALUE;
 
 	// -------------------------- selectivity----------------------------
-	private double selectivity = 1d;
+	protected double selectivity = 1d;
 
 	// ------------------------------------------------------------------------
 	//  Life Cycle

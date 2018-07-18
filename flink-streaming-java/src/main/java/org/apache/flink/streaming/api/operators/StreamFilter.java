@@ -34,6 +34,10 @@ public class StreamFilter<IN> extends AbstractUdfStreamOperator<IN, FilterFuncti
 		chainingStrategy = ChainingStrategy.ALWAYS;
 	}
 
+	public StreamFilter(FilterFunction<IN> filterFunction, double selectivity) {
+		super(filterFunction, selectivity);
+	}
+
 	@Override
 	public void processElement(StreamRecord<IN> element) throws Exception {
 		if (userFunction.filter(element.getValue())) {
