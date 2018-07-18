@@ -65,7 +65,8 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 
 			DataStream<Tuple2<String, Integer>> grades = env
 				.fromElements(WindowJoinData.GRADES_INPUT.split("\n"))
-				.map(new Parser());
+				.setSourceSize(2)
+				.map(new Parser(),0.1);
 
 			DataStream<Tuple2<String, Integer>> salaries = env
 				.fromElements(WindowJoinData.SALARIES_INPUT.split("\n"))

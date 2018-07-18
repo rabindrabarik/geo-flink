@@ -63,8 +63,9 @@ public class DataStreamSource<T> extends SingleOutputStreamOperator<T> {
 	 * Sets the size of the data stream produced by this source, relative to the other sources in the program.
 	 * Setting this value close to reality will lead to better shceduling decisions when using a {@link GeoScheduler}
 	 * */
-	public void setSourceSize(double sourceSize) {
+	public DataStreamSource<T> setSourceSize(double sourceSize) {
 		((SourceTransformation<T>) transformation).setSourceSize(sourceSize);
+		return this;
 	}
 
 	@Override
