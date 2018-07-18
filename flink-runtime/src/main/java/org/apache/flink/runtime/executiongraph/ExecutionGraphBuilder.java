@@ -258,6 +258,8 @@ public class ExecutionGraphBuilder {
 			jobGraph.getUserJarBlobKeys(),
 			jobGraph.getClasspaths());
 
+		setAllEdgeWeights(jobGraph);
+
 		OptimisationModelSolution solution = solveOptimisationModel(jobGraph, slotProvider, log, placedVertices, bandwidths);
 
 
@@ -336,8 +338,6 @@ public class ExecutionGraphBuilder {
 	private static OptimisationModelSolution solveOptimisationModel(JobGraph jobGraph, SlotProvider slotProvider, Logger log, Map<JobVertex, GeoLocation> placedVertices, TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths) {
 		if (slotProvider instanceof GeoScheduler) {
 			GeoScheduler geoScheduler = (GeoScheduler) slotProvider;
-
-			setAllEdgeWeights(jobGraph);
 
 			//creating and solving the model
 			OptimisationModel model;
@@ -581,7 +581,7 @@ public class ExecutionGraphBuilder {
 				}
 
 				//weight is ( sourceVertexInputsWeight * sourceVertexSelectivity ) / sourceVertexOutputs
-				double weightToSet = (sourceVertexInputsWeight * edge.getSource().getProducer().getSelectivity()) / edge.getSource().getProducer().getProducedDataSets().size();
+				double weightToSet = (sourceVertexInputsWeight * sourceVertex.getSelectivity()) / edge.getSource().getProducer().getProducedDataSets().size();
 				edge.setWeight(weightToSet);
 			}
 		}
