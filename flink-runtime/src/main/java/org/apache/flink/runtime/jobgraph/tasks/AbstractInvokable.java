@@ -56,7 +56,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  */
 public abstract class AbstractInvokable {
 
-	public static int selectivity = 1;
+	public static double selectivity = 1;
 
 	/** The environment assigned to this invokable. */
 	private final Environment environment;

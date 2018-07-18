@@ -248,10 +248,12 @@ public class JobVertex implements java.io.Serializable {
 
 		try {
 			Field f = invokable.getField("selectivity");
-			this.selectivity = f.getDouble(null);
+			double invokableSelectivity = f.getDouble(null);
+			Preconditions.checkArgument(invokableSelectivity > 0, "Selectivity must be positive");
+			this.selectivity = invokableSelectivity;
 		} catch (IllegalAccessException | NoSuchFieldException e) {
 			e.printStackTrace();
-			this.selectivity = 1;
+			this.selectivity = 1d;
 		}
 	}
 
@@ -470,6 +472,7 @@ public class JobVertex implements java.io.Serializable {
 	}
 
 	public void setSelectivity(double selectivity) {
+		Preconditions.checkArgument(selectivity > 0, "Selectivity must be positive");
 		this.selectivity = selectivity;
 	}
 

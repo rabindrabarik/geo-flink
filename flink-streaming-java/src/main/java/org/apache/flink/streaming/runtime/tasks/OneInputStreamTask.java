@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
 @Internal
 public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamOperator<IN, OUT>> {
 
-	public static double selectivity = 1;
+	public static double selectivity = 1d;
 
 	private StreamInputProcessor<IN> inputProcessor;
 

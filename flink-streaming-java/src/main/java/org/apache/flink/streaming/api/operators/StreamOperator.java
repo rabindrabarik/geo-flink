@@ -124,6 +124,8 @@ public interface StreamOperator<OUT> extends CheckpointListener, KeyContext, Dis
 
 	void setChainingStrategy(ChainingStrategy strategy);
 
+	double getSelectivity();
+
 	MetricGroup getMetricGroup();
 
 	OperatorID getOperatorID();

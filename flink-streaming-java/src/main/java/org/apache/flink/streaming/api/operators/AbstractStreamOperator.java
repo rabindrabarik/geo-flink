@@ -625,6 +625,13 @@ public abstract class AbstractStreamOperator<OUT>
 		return chainingStrategy;
 	}
 
+	// ------------------------------------------------------------------------
+	//  Selectivity
+	// ------------------------------------------------------------------------
+	@Override
+	public final double getSelectivity() {
+		return selectivity;
+	}
 
 	// ------------------------------------------------------------------------
 	//  Metrics
