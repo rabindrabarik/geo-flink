@@ -72,7 +72,6 @@ public class TwoInputTransformation<IN1, IN2, OUT> extends StreamTransformation<
 		this.input1 = input1;
 		this.input2 = input2;
 		this.operator = operator;
-		this.selectivity = input1.getSelectivity() + input2.getSelectivity();
 	}
 
 	/**

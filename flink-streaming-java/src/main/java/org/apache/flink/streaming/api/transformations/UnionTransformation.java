@@ -54,12 +54,6 @@ public class UnionTransformation<T> extends StreamTransformation<T> {
 			}
 		}
 
-		//selectivity is set to the sum of the selectivities
-		setSelectivity(inputs.stream()
-			.map(StreamTransformation::getSelectivity)
-			.reduce((s1, s2) -> s1 + s2)
-			.orElse(1d));
-
 		this.inputs = Lists.newArrayList(inputs);
 	}
 
