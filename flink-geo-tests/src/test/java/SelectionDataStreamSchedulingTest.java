@@ -69,7 +69,13 @@ public class SelectionDataStreamSchedulingTest extends DataStreamSchedulingTestF
 			DataStream<Tuple2<String, Integer>> grades = env
 				.fromElements(WindowJoinData.GRADES_INPUT.split("\n"))
 				.setSourceSize(2)
-				.map(new Parser(), 0.1);
+				.map(new Parser(), 0.1)
+				.map(new MapFunction<Tuple2<String, Integer>, Tuple2<String, Integer>>() {
+					@Override
+					public Tuple2<String, Integer> map(Tuple2<String, Integer> value) throws Exception {
+						return value;
+					}
+				});
 
 			SplitStream<Tuple2<String, Integer>> splitted = grades.split(new SelectivityAwareOutputSelector<Tuple2<String, Integer>>() {
 				private Random random = new Random();

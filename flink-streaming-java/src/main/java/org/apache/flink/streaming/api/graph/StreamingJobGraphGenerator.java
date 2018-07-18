@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.graph;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.cache.DistributedCache;
@@ -58,8 +59,6 @@ import org.apache.flink.streaming.runtime.tasks.StreamIterationHead;
 import org.apache.flink.streaming.runtime.tasks.StreamIterationTail;
 import org.apache.flink.util.FlinkRuntimeException;
 import org.apache.flink.util.SerializedValue;
-
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,6 +110,8 @@ public class StreamingJobGraphGenerator {
 	private final Map<Integer, ResourceSpec> chainedMinResources;
 	private final Map<Integer, ResourceSpec> chainedPreferredResources;
 
+	private Map<Integer, Double> chainedSelectivities;
+
 	private final StreamGraphHasher defaultStreamGraphHasher;
 	private final List<StreamGraphHasher> legacyStreamGraphHashers;
 
@@ -126,6 +127,7 @@ public class StreamingJobGraphGenerator {
 		this.chainedNames = new HashMap<>();
 		this.chainedMinResources = new HashMap<>();
 		this.chainedPreferredResources = new HashMap<>();
+		this.chainedSelectivities = new HashMap<>();
 		this.physicalEdgesInOrder = new ArrayList<>();
 
 		jobGraph = new JobGraph(streamGraph.getJobName());
@@ -239,6 +241,7 @@ public class StreamingJobGraphGenerator {
 
 			for (StreamEdge nonChainable : nonChainableOutputs) {
 				transitiveOutEdges.add(nonChainable);
+
 				createChain(nonChainable.getTargetId(), nonChainable.getTargetId(), hashes, legacyHashes, 0, chainedOperatorHashes);
 			}
 
@@ -254,7 +257,9 @@ public class StreamingJobGraphGenerator {
 			chainedNames.put(currentNodeId, createChainedName(currentNodeId, chainableOutputs));
 			chainedMinResources.put(currentNodeId, createChainedMinResources(currentNodeId, chainableOutputs));
 			chainedPreferredResources.put(currentNodeId, createChainedPreferredResources(currentNodeId, chainableOutputs));
+			chainedSelectivities.put(currentNodeId, createChainedSelectivity(currentNodeId, chainableOutputs));
 
+			//only head of chains are created
 			StreamConfig config = currentNodeId.equals(startNodeId)
 					? createJobVertex(startNodeId, hashes, legacyHashes, chainedOperatorHashes)
 					: new StreamConfig(new Configuration());
@@ -313,6 +318,14 @@ public class StreamingJobGraphGenerator {
 		} else {
 			return operatorName;
 		}
+	}
+
+	private double createChainedSelectivity(Integer vertexID, List<StreamEdge> chainedOutputs) {
+		double chainHeadSelectivity = streamGraph.getStreamNode(vertexID).getSelectivity();
+		for (StreamEdge chainable : chainedOutputs) {
+			chainHeadSelectivity = chainHeadSelectivity * chainedSelectivities.get(chainable.getTargetId());
+		}
+		return chainHeadSelectivity;
 	}
 
 	private ResourceSpec createChainedMinResources(Integer vertexID, List<StreamEdge> chainedOutputs) {
@@ -388,6 +401,8 @@ public class StreamingJobGraphGenerator {
 		jobVertex.setResources(chainedMinResources.get(streamNodeId), chainedPreferredResources.get(streamNodeId));
 
 		jobVertex.setInvokableClass(streamNode.getJobVertexClass());
+
+		jobVertex.setSelectivity(chainedSelectivities.get(streamNodeId));
 
 		int parallelism = streamNode.getParallelism();
 
