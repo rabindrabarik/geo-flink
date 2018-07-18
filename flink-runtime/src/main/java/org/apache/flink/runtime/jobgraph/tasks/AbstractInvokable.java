@@ -55,9 +55,6 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * {@link #abortCheckpointOnBarrier(long, Throwable)} and {@link #notifyCheckpointComplete(long)}.
  */
 public abstract class AbstractInvokable {
-
-	public static double selectivity = 1;
-
 	/** The environment assigned to this invokable. */
 	private final Environment environment;
 

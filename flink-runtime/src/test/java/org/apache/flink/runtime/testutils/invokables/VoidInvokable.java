@@ -13,8 +13,6 @@ public class VoidInvokable extends AbstractInvokable {
 		super(environment);
 	}
 
-	public static double selectivity = 1d;
-
 	@Override
 	public void invoke() throws Exception {
 	}

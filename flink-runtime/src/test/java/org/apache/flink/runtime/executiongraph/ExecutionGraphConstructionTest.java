@@ -100,12 +100,6 @@ public class ExecutionGraphConstructionTest {
 		v4.setInvokableClass(AbstractInvokable.class);
 		v5.setInvokableClass(AbstractInvokable.class);
 
-		assertEquals(v1.getSelectivity(), AbstractInvokable.selectivity, 0d);
-		assertEquals(v2.getSelectivity(), AbstractInvokable.selectivity, 0d);
-		assertEquals(v3.getSelectivity(), AbstractInvokable.selectivity, 0d);
-		assertEquals(v4.getSelectivity(), AbstractInvokable.selectivity, 0d);
-		assertEquals(v5.getSelectivity(), AbstractInvokable.selectivity, 0d);
-
 		v2.connectNewDataSetAsInput(v1, DistributionPattern.ALL_TO_ALL, ResultPartitionType.PIPELINED);
 		v4.connectNewDataSetAsInput(v2, DistributionPattern.ALL_TO_ALL, ResultPartitionType.PIPELINED);
 		v4.connectNewDataSetAsInput(v3, DistributionPattern.ALL_TO_ALL, ResultPartitionType.PIPELINED);

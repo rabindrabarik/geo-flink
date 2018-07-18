@@ -245,16 +245,6 @@ public class JobVertex implements java.io.Serializable {
 		Preconditions.checkNotNull(invokable);
 		this.invokableClassName = invokable.getName();
 		this.isStoppable = StoppableTask.class.isAssignableFrom(invokable);
-
-		try {
-			Field f = invokable.getField("selectivity");
-			double invokableSelectivity = f.getDouble(null);
-			Preconditions.checkArgument(invokableSelectivity > 0, "Selectivity must be positive");
-			this.selectivity = invokableSelectivity;
-		} catch (IllegalAccessException | NoSuchFieldException e) {
-			e.printStackTrace();
-			this.selectivity = 1d;
-		}
 	}
 
 	/**
