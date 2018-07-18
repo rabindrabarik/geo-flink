@@ -122,7 +122,7 @@ public abstract class StreamTransformation<T> {
 	 * The selectivity of this operator. It represents the amount of data that will come out of this transformation,
 	 * relative to this transformation's input size
 	 * */
-	protected double selectivity = 1;
+	protected double selectivity = 1d;
 
 	/**
 	 * The maximum parallelism for this stream transformation. It defines the upper limit for
@@ -186,6 +186,7 @@ public abstract class StreamTransformation<T> {
 		this.outputType = outputType;
 		this.parallelism = parallelism;
 		this.slotSharingGroup = null;
+		Preconditions.checkArgument(selectivity > 0, "Selectivity must be positive");
 		this.selectivity = selectivity;
 	}
 
@@ -459,6 +460,7 @@ public abstract class StreamTransformation<T> {
 	 * relative to this transformation's input size
 	 */
 	public void setSelectivity(double selectivity) {
+		Preconditions.checkArgument(selectivity > 0, "Selectivity must be positive");
 		this.selectivity = selectivity;
 	}
 

@@ -575,7 +575,7 @@ public class DataStream<T> {
 	 * 			  for every tuple that comes in. For example, if a {@link Tuple2} comes in and
 	 * 			  a {@link Tuple1} comes out, a value of 0.5 may be appropriate.
 	 * 			  Specifying a selectivity that is close to the real-world one will lead to
-	 * 			  better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * 			  better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 * @param <R>
 	 *            output type
 	 * @return The transformed {@link DataStream}.
@@ -597,7 +597,7 @@ public class DataStream<T> {
 	 * <p>
 	 * A default selectivity of 0.5 will be used. See {@link #map(MapFunction, double)}
 	 * for a definition of selectivity. Specifying a selectivity that is close to the
-	 * real-world one will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * real-world one will lead to better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 *
 	 * @param mapper
 	 *            The MapFunction that is called for each element of the
@@ -624,7 +624,7 @@ public class DataStream<T> {
 	 * <p>
 	 * A default selectivity of 1 will be used. See {@link #flatMap(FlatMapFunction, double)}
 	 * for a definition of selectivity.Specifying a selectivity that is close to the
-	 * real-world one will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * real-world one will lead to better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 *
 	 * @param flatMapper
 	 *            The FlatMapFunction that is called for each element of the
@@ -660,7 +660,7 @@ public class DataStream<T> {
 	 * 			  for every tuple that comes in. For example, if a {@link Tuple1} comes in and
 	 * 			  two {@link Tuple2} come out, a value of 4 may be appropriate.
 	 * 			  Specifying a selectivity that is close to the real-world one will lead
-	 * 			  to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * 			  to better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 * @param <R>
 	 *            output type
 	 * @return The transformed {@link DataStream}.
@@ -721,7 +721,7 @@ public class DataStream<T> {
 	 * 			  for every tuple that comes in. For example, if a {@link Tuple1} comes in and
 	 * 			  two {@link Tuple2} come out, a value of 4 may be appropriate.
 	 * 			  Specifying a selectivity that is close to the real-world one will lead to
-	 * 			  better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * 			  better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 *
 	 * @param <R> The type of elements emitted by the {@code ProcessFunction}.
 	 *
@@ -748,7 +748,7 @@ public class DataStream<T> {
 	 * <p>
 	 * 	 A default selectivity of 1 will be used. See {@link #process(ProcessFunction, TypeInformation, double)}
 	 * 	 for a definition of selectivity.Specifying a selectivity that is close to the
-	 * 	 real-world one will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * 	 real-world one will lead to better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 * @param processFunction The {@link ProcessFunction} that is called for each element
 	 *                      in the stream.
 	 * @param outputType {@link TypeInformation} for the result type of the function.
@@ -779,7 +779,7 @@ public class DataStream<T> {
 	 * <p>
 	 * 	 A default selectivity of 0.5 will be used. See {@link #filter(FilterFunction, double)}
 	 * 	 for a definition of selectivity. Specifying a selectivity that is close to the real-world one
-	 * 	 will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * 	 will lead to better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 *
 	 * @param filter
 	 *            The FilterFunction that is called for each element of the
@@ -808,7 +808,7 @@ public class DataStream<T> {
 	 * 			  for every tuple that comes in. For example, if half of the
 	 * 			  tuples get discarded, a value of 0.5 may be appropriate.
 	 * 			  Specifying a selectivity that is close to the real-world one will lead to
-	 * 			  better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * 			  better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 * @return The filtered DataStream.
 	 */
 	public SingleOutputStreamOperator<T> filter(FilterFunction<T> filter, double selectivity) {
@@ -1267,7 +1267,7 @@ public class DataStream<T> {
 	 * 			  for every tuple that comes in. For example, if half of the
 	 * 			  tuples get discarded, a value of 0.5 may be appropriate.
 	 * 			  Specifying a selectivity that is close to the real-world one will lead to
-	 * 			  better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * 			  better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 *
 	 * @param <R>
 	 *            type of the return stream
@@ -1301,7 +1301,7 @@ public class DataStream<T> {
 	 * <p>
 	 * A default selectivity of 1 will be used. See {@link #transform(String, TypeInformation, OneInputStreamOperator, double)}
 	 * for a definition of selectivity. Specifying a selectivity that is close to the real-world one
-	 * will lead to better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * will lead to better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 * @param operatorName
 	 *            name of the operator, for logging purposes
 	 * @param outTypeInfo
@@ -1348,7 +1348,7 @@ public class DataStream<T> {
 	/**
 	 * @return The selectivity of the underlying operator, i.e. the amount of data that will come out this datastream,
 	 * for every tuple that comes in. Specifying a selectivity that is close to the real-world one will lead to
-	 * better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 */
 	public double getSelectivity() {
 		return transformation.getSelectivity();
@@ -1357,7 +1357,7 @@ public class DataStream<T> {
 	/**
 	 * Sets the selectivity of the underlying operator, i.e. the amount of data that will come out this datastream,
 	 * for every tuple that comes in. Specifying a selectivity that is close to the real-world one will lead to
-	 * better scheduling ecisions when using a {@link GeoScheduler} for scheduling.
+	 * better scheduling decisions when using a {@link GeoScheduler} for scheduling.
 	 */
 	public void setSelectivity(double selectivity) {
 		transformation.setSelectivity(selectivity);

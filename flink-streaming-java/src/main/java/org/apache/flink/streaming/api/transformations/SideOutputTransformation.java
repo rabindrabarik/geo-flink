@@ -18,10 +18,9 @@
 
 package org.apache.flink.streaming.api.transformations;
 
+import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.util.OutputTag;
-
-import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
 
 import java.util.Collection;
 import java.util.List;
@@ -47,6 +46,7 @@ public class SideOutputTransformation<T> extends StreamTransformation<T> {
 		super("SideOutput", tag.getTypeInfo(), requireNonNull(input).getParallelism());
 		this.input = input;
 		this.tag = requireNonNull(tag);
+		this.selectivity = tag.getSelectivity();
 	}
 
 	/**

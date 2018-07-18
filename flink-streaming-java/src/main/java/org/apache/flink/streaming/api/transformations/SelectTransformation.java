@@ -23,6 +23,7 @@ import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
 import org.apache.flink.streaming.api.collector.selector.OutputSelector;
 import org.apache.flink.streaming.api.collector.selector.SelectivityAwareOutputSelector;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
+import org.apache.flink.util.Preconditions;
 
 import java.util.Collection;
 import java.util.List;
@@ -62,17 +63,30 @@ public class SelectTransformation<T> extends StreamTransformation<T> {
 		if(isSelectivityAware(input)) {
 			setSelectivityFromSelector((SplitTransformation<T>) input, selectedNames);
 		} else {
-			this.selectivity = 0.5;
+			this.selectivity = 0.5d;
 		}
 	}
 
 	/**
 	 * Set the selectivity of the transformation to the sum of the selectivities associated by the
 	 * transformation's {@link OutputSelector} with the selectedNames
-	 * */
+	 */
 	private void setSelectivityFromSelector(SplitTransformation<T> input, List<String> selectedNames) {
 		SelectivityAwareOutputSelector<T> os = (SelectivityAwareOutputSelector<T>) input.getOutputSelector();
-		this.selectivity = os.selectivities().entrySet().stream().filter(e -> selectedNames.contains(e.getKey())).map(Map.Entry::getValue).reduce((s1, s2) -> s1 + s2).orElse(0.5d);
+		double selectivityToSet = 0d;
+
+		for (Map.Entry<String, Double> tagAndSelectivity : os.selectivities().entrySet()) {
+			Preconditions.checkArgument(tagAndSelectivity.getValue() > 0, "Selectivity must be positive");
+			if (selectedNames.contains(tagAndSelectivity.getKey())) {
+				selectivityToSet += tagAndSelectivity.getValue();
+			}
+		}
+
+		if (selectivityToSet > 0) {
+			this.selectivity = selectivityToSet;
+		} else {
+			this.selectivity = 0.5d;
+		}
 	}
 
 	/**
