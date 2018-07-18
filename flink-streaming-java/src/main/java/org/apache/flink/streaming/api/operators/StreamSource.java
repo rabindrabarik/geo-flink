@@ -19,6 +19,7 @@ package org.apache.flink.streaming.api.operators;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.runtime.jobgraph.OperatorID;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.watermark.Watermark;
@@ -131,6 +132,23 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 	protected boolean isCanceledOrStopped() {
 		return canceledOrStopped;
 	}
+
+	/*
+	 * @return the size of the data stream produced by this source, relative to the other sources in the program.
+	 * Setting this value close to reality will lead to better shceduling decisions when using a {@link GeoScheduler}
+	 * **/
+	public double getSourceSize() {
+		return selectivity;
+	}
+
+	/**
+	 * Sets the size of the data stream produced by this source, relative to the other sources in the program.
+	 * Setting this value close to reality will lead to better shceduling decisions when using a {@link GeoScheduler}
+	 * */
+	public void setSourceSize(double sourceSize) {
+		this.selectivity = sourceSize;
+	}
+
 
 	private static class LatencyMarksEmitter<OUT> {
 		private final ScheduledFuture<?> latencyMarkTimer;

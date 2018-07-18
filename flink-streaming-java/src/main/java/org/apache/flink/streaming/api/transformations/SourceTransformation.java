@@ -20,6 +20,7 @@ package org.apache.flink.streaming.api.transformations;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.StreamSource;
 
@@ -60,6 +61,24 @@ public class SourceTransformation<T> extends StreamTransformation<T> {
 	public StreamSource<T, ?> getOperator() {
 		return operator;
 	}
+
+
+	/*
+	 * @return the size of the data stream produced by this source, relative to the other sources in the program.
+	 * Setting this value close to reality will lead to better shceduling decisions when using a {@link GeoScheduler}
+	 * **/
+	public double getSourceSize() {
+		return operator.getSourceSize();
+	}
+
+	/**
+	 * Sets the size of the data stream produced by this source, relative to the other sources in the program.
+	 * Setting this value close to reality will lead to better shceduling decisions when using a {@link GeoScheduler}
+	 * */
+	public void setSourceSize(double sourceSize) {
+		operator.setSourceSize(sourceSize);
+	}
+
 
 	@Override
 	public Collection<StreamTransformation<?>> getTransitivePredecessors() {

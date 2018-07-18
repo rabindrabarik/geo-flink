@@ -303,6 +303,8 @@ public class StreamNode implements Serializable {
 		this.userHash = userHash;
 	}
 
+	public double getSelectivity() {return operator.getSelectivity();}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {

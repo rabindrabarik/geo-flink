@@ -19,6 +19,7 @@ package org.apache.flink.streaming.api.datastream;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.operators.StreamSource;
 import org.apache.flink.streaming.api.transformations.SourceTransformation;
@@ -34,7 +35,8 @@ public class DataStreamSource<T> extends SingleOutputStreamOperator<T> {
 	boolean isParallel;
 
 	public DataStreamSource(StreamExecutionEnvironment environment,
-			TypeInformation<T> outTypeInfo, StreamSource<T, ?> operator,
+			TypeInformation<T> outTypeInfo,
+			StreamSource<T, ?> operator,
 			boolean isParallel, String sourceName) {
 		super(environment, new SourceTransformation<>(sourceName, operator, outTypeInfo, environment.getParallelism()));
 
@@ -47,6 +49,22 @@ public class DataStreamSource<T> extends SingleOutputStreamOperator<T> {
 	public DataStreamSource(SingleOutputStreamOperator<T> operator) {
 		super(operator.environment, operator.getTransformation());
 		this.isParallel = true;
+	}
+
+	/*
+	 * @return the size of the data stream produced by this source, relative to the other sources in the program.
+	 * Setting this value close to reality will lead to better shceduling decisions when using a {@link GeoScheduler}
+	 * **/
+	public double getSourceSize() {
+		return ((SourceTransformation<T>) transformation).getSourceSize();
+	}
+
+	/**
+	 * Sets the size of the data stream produced by this source, relative to the other sources in the program.
+	 * Setting this value close to reality will lead to better shceduling decisions when using a {@link GeoScheduler}
+	 * */
+	public void setSourceSize(double sourceSize) {
+		((SourceTransformation<T>) transformation).setSourceSize(sourceSize);
 	}
 
 	@Override
