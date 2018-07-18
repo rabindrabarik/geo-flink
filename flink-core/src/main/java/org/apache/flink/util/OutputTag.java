@@ -48,75 +48,37 @@ public class OutputTag<T> implements Serializable {
 
 	private final TypeInformation<T> typeInfo;
 
-	private final double selectivity;
-
 	/**
-	 * Creates a new named {@code OutputTag} with the given id and a default selectivity of 0.5.
-	 * See {@link #OutputTag(String, double)} for a definition of selectivity. Specifying a selectivity that is close to the
-	 * real-world one will lead to better scheduling ecisions when using a GeoScheduler for scheduling.
+	 * Creates a new named {@code OutputTag} with the given id.
 	 *
 	 * @param id The id of the created {@code OutputTag}.
-	 */
+     */
 	public OutputTag(String id) {
-		this(id, 0.5d);
-	}
-
-	/**
-	 * Creates a new named {@code OutputTag} with the given id and selectivity.
-	 *
-	 * @param id          The id of the created {@code OutputTag}.
-	 * @param selectivity The selectivity of the created {@code OutputTag}, i.e. the amount of data that will come out of this output,
-	 *                    for every tuple that comes in the DataStream it is connected to. For example, if every third tuple that comes in
-	 *                    gets directed to this output, a value of 0.3 may be appropriate. Specifying a selectivity that is close to the real-world one will lead to
-	 *                    better scheduling decisions when using a GeoScheduler for scheduling.
-	 */
-	public OutputTag(String id, double selectivity) {
 		Preconditions.checkNotNull(id, "OutputTag id cannot be null.");
 		Preconditions.checkArgument(!id.isEmpty(), "OutputTag id must not be empty.");
 		this.id = id;
-		Preconditions.checkArgument(selectivity > 0, "Selectivity must be positive");
-		this.selectivity = selectivity;
 
 		try {
 			this.typeInfo = TypeExtractor.createTypeInfo(this, OutputTag.class, getClass(), 0);
 		}
 		catch (InvalidTypesException e) {
 			throw new InvalidTypesException("Could not determine TypeInformation for the OutputTag type. " +
-				"The most common reason is forgetting to make the OutputTag an anonymous inner class. " +
-				"It is also not possible to use generic type variables with OutputTags, such as 'Tuple2<A, B>'.", e);
+					"The most common reason is forgetting to make the OutputTag an anonymous inner class. " +
+					"It is also not possible to use generic type variables with OutputTags, such as 'Tuple2<A, B>'.", e);
 		}
 	}
 
 	/**
-	 * Creates a new named {@code OutputTag} with the given id, output {@link TypeInformation} and a default selectivity of 0.5.
-	 * See {@link #OutputTag(String, double)} for a definition of selectivity. Specifying a selectivity that is close to the
-	 * real-world one will lead to better scheduling ecisions when using a GeoScheduler for scheduling.
+	 * Creates a new named {@code OutputTag} with the given id and output {@link TypeInformation}.
 	 *
-	 * @param id       The id of the created {@code OutputTag}.
+	 * @param id The id of the created {@code OutputTag}.
 	 * @param typeInfo The {@code TypeInformation} for the side output.
 	 */
 	public OutputTag(String id, TypeInformation<T> typeInfo) {
-		this(id, typeInfo, 0.5d);
-	}
-
-	/**
-	 * Creates a new named {@code OutputTag} with the given id, output {@link TypeInformation} and
-	 * selectivity.
-	 *
-	 * @param id          The id of the created {@code OutputTag}.
-	 * @param typeInfo    The {@code TypeInformation} for the side output.
-	 * @param selectivity The selectivity of the created {@code OutputTag}, i.e. the amount of data that will come out of this output,
-	 *                    for every tuple that comes in the DataStream it is connected to. For example, if every third tuple that comes in
-	 *                    gets directed to this output, a value of 0.3 may be appropriate. Specifying a selectivity that is close to the real-world one will lead to
-	 *                    better scheduling decisions when using a GeoScheduler for scheduling.
-	 */
-	public OutputTag(String id, TypeInformation<T> typeInfo, double selectivity) {
 		Preconditions.checkNotNull(id, "OutputTag id cannot be null.");
 		Preconditions.checkArgument(!id.isEmpty(), "OutputTag id must not be empty.");
 		this.id = id;
 		this.typeInfo = Preconditions.checkNotNull(typeInfo, "TypeInformation cannot be null.");
-		Preconditions.checkArgument(selectivity > 0, "Selectivity must be positive");
-		this.selectivity = selectivity;
 	}
 
 	// ------------------------------------------------------------------------
@@ -127,10 +89,6 @@ public class OutputTag<T> implements Serializable {
 
 	public TypeInformation<T> getTypeInfo() {
 		return typeInfo;
-	}
-
-	public double getSelectivity() {
-		return selectivity;
 	}
 
 	// ------------------------------------------------------------------------
