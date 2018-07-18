@@ -13,20 +13,32 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 public class SpyableFlinkScheduler extends Scheduler implements SpyableScheduler {
+
+	private Set<SchedulingDecisionSpy> spies = new HashSet<>();
+
 	/**
 	 * Creates a new scheduler.
 	 *
 	 * @param executor the executor to run futures on
+	 * @param spy a spy to notify of scheduling decisions
 	 */
+	public SpyableFlinkScheduler(Executor executor, SchedulingDecisionSpy spy) {
+		super(executor);
+		spies.add(spy);
+	}
+
 	public SpyableFlinkScheduler(Executor executor) {
 		super(executor);
 	}
 
-	private Set<SchedulingDecisionSpy> spies = new HashSet<>();
-
 	@Override
 	public void addSchedulingDecisionSpy(SchedulingDecisionSpy spy) {
 		spies.add(spy);
+	}
+
+	@Override
+	public Set<SchedulingDecisionSpy> getSpies() {
+		return spies;
 	}
 
 	@Override

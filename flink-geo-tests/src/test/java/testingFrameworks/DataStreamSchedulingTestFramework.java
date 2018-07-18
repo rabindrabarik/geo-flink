@@ -2,19 +2,24 @@ package testingFrameworks;
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GeoSchedulerTestingUtilsOptions;
+import org.apache.flink.runtime.executiongraph.ExecutionGraph;
+import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.test.util.MiniClusterResource;
 import org.apache.flink.test.util.TestEnvironment;
 import org.apache.flink.util.TestLogger;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spies.SchedulingDecisionSpy;
 import spies.SpyableFlinkScheduler;
 import spies.SpyableGeoScheduler;
 import spies.SpyableScheduler;
+import testOutputWriter.TestOutputImpl;
 import testOutputWriter.TestOutputWriter;
 
 import java.util.Arrays;
@@ -30,13 +35,16 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 
 	private final static Logger log = LoggerFactory.getLogger(DataStreamSchedulingTestFramework.class);
 
-	private final static TestOutputWriter writer = new TestOutputWriter();
+	private final TestOutputWriter<TestOutputImpl> writer = new TestOutputWriter<>(this.getClass().getSimpleName() + ".csv");
 
 	@Parameterized.Parameters(name = "scheduling via: {0}")
 	public static Collection<Object[]> data() {
+		SpyableGeoScheduler spyableGeoScheduler = new SpyableGeoScheduler(TestingUtils.defaultExecutor(), new SchedulingDecisionSpy());
+		SpyableFlinkScheduler spyableFlinkScheduler = new SpyableFlinkScheduler(TestingUtils.defaultExecutor(), new SchedulingDecisionSpy());
+
 		return Arrays.asList(new Object[][]{
-			{new SpyableGeoScheduler(TestingUtils.defaultExecutor()), MiniClusterResource.MiniClusterType.LEGACY_SPY_GEO},
-			{new SpyableFlinkScheduler(TestingUtils.defaultExecutor()), MiniClusterResource.MiniClusterType.LEGACY_SPY_FLINK}
+			{spyableGeoScheduler, MiniClusterResource.MiniClusterType.LEGACY_SPY_GEO},
+			{spyableFlinkScheduler, MiniClusterResource.MiniClusterType.LEGACY_SPY_FLINK}
 		});
 	}
 
@@ -60,6 +68,10 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 	public int numberSlotsPerTaskManager;
 
 	public SchedulerInjectingMiniClusterResource miniClusterResource;
+
+	public String jobName;
+
+	public String instanceSetName;
 
 	public DataStreamSchedulingTestFramework(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
 		this.scheduler = scheduler;
@@ -97,5 +109,22 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 
 	protected TestEnvironment getEnvironment() {
 		return miniClusterResource.getTestEnvironment();
+	}
+
+	@After
+	public void teardown() {
+		if(scheduler.getSpies().size() != 1) {
+			throw new RuntimeException("Shouldn't have more than 1 spy");
+		}
+
+		SchedulingDecisionSpy spy = scheduler.getSpies().iterator().next();
+
+		if(spy.getGraphs().size() != 1) {
+			throw new RuntimeException("Shouldn't have more than 1 graph");
+		}
+
+		ExecutionGraph executionGraph = spy.getGraphs().iterator().next();
+
+		SchedulingTestFrameworkUtils.writeTestOutcome(executionGraph, spy, (Scheduler) scheduler, writer, jobName, instanceSetName);
 	}
 }

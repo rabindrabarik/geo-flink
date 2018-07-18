@@ -8,6 +8,8 @@ import org.apache.flink.runtime.jobgraph.ScheduleMode;
 import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.util.TestLogger;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,13 +25,13 @@ import testOutputWriter.TestOutputWriter;
 import writableTypes.TestInstanceSet;
 import writableTypes.TestJobGraph;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.flink.runtime.jobmanager.scheduler.SchedulerTestUtils.makeExecutionGraph;
+import static testingFrameworks.SchedulingTestFrameworkUtils.writeTestOutcome;
 
 /**
  * This tests logs the slot usages after scheduling a {@link TestJobGraph}.
@@ -40,7 +42,7 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 
 	private final static Logger log = LoggerFactory.getLogger(JobGraphSchedulingTestFramework.class);
 
-	private final static TestOutputWriter<TestOutputImpl> writer = new TestOutputWriter<>();
+	private final TestOutputWriter<TestOutputImpl> writer = new TestOutputWriter<>(this.getClass().getSimpleName() + ".csv");
 
 	@Parameterized.Parameters(name = "scheduling via: {0}")
 	public static Collection<Object[]> data() {
@@ -51,6 +53,9 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 
 	@Parameterized.Parameter(0)
 	public Scheduler scheduler;
+
+	private ExecutionGraph executionGraph;
+	private SchedulingDecisionSpy spy;
 
 	/**
 	 * @return the JobGraph to schedule
@@ -69,18 +74,22 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 		return new HashMap<>();
 	}
 
-	@Test
-	public void test() throws Exception {
-
-		long initialTime = System.currentTimeMillis();
-
+	@Before
+	public void setup() {
 		SpyableScheduler spyableScheduler = ((SpyableScheduler) scheduler);
 
 		for (Instance i : instanceSet().getInstances()) {
 			scheduler.newInstanceAvailable(i);
 		}
 
-		ExecutionGraph executionGraph = makeExecutionGraph(
+		spy = new SchedulingDecisionSpy();
+		spy.addPlacedVertices(placedVertices());
+		spyableScheduler.addSchedulingDecisionSpy(spy);
+	}
+
+	@Test
+	public void test() throws Exception {
+		executionGraph = makeExecutionGraph(
 			jobGraph().getJobGraph().getVerticesSortedTopologicallyFromSources().toArray(new JobVertex[0]),
 			log,
 			scheduler,
@@ -88,38 +97,15 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 			null);
 
 
-		SchedulingDecisionSpy spy = new SchedulingDecisionSpy();
-		spy.addPlacedVertices(placedVertices());
-
-		spyableScheduler.addSchedulingDecisionSpy(spy);
-
 		executionGraph.setScheduleMode(ScheduleMode.EAGER);
 		executionGraph.scheduleForExecution();
 
-		for (Instance i : scheduler.getInstancesByHost().values().stream().reduce((a, b) -> {
-			a.addAll(b);
-			return a;
-		}).orElse(new ArrayList<>())) {
-			System.out.println("instance: " + i.getId() + " at " + i.getTaskManagerLocation().getGeoLocation());
-			System.out.println("free slots: " + i.getNumberOfAvailableSlots());
-			System.out.println("allocated slots: " + i.getNumberOfAllocatedSlots());
-			System.out.println();
-		}
-
-		double networkCost = spy.calculateNetworkCost(executionGraph);
-		double executionSpeed = spy.calculateExecutionSpeed(executionGraph);
-
-		System.out.println("network cost: " + networkCost);
-		System.out.println("execution speed: " + executionSpeed);
-		System.out.println("\n\n");
-		System.out.println(spy.getAssignementsString());
-
-		writer.write(new TestOutputImpl(
-			networkCost,
-			executionSpeed,
-			scheduler.getClass().getSimpleName(),
-			jobGraph().getClassNameString(),
-			instanceSet().getClassNameString(),
-			Math.round(spy.getModelSolveTime(executionGraph) * 1000)));
 	}
+
+	@After
+	public void teardown() {
+		writeTestOutcome(executionGraph, spy, scheduler, writer, jobGraph().getClassNameString(), instanceSet().getClassNameString());
+	}
+
+
 }

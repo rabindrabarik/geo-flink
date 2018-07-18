@@ -1,5 +1,3 @@
-package testingFrameworks;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -9,8 +7,10 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.test.examples.join.WindowJoinData;
 import org.apache.flink.test.util.MiniClusterResource;
+import org.junit.Before;
 import org.junit.Test;
 import spies.SpyableScheduler;
+import testingFrameworks.DataStreamSchedulingTestFramework;
 
 import java.io.File;
 import java.util.HashMap;
@@ -32,9 +32,17 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 			return geoLocationSlotMap;
 		} else {
 			geoLocationSlotMap = new HashMap<>();
-			geoLocationSlotMap.put("geolocation1", 5);
+			geoLocationSlotMap.put("center", 10);
+			geoLocationSlotMap.put("edge1", 4);
+			geoLocationSlotMap.put("edge2", 4);
 		}
 		return geoLocationSlotMap;
+	}
+
+	@Before
+	public void setup() {
+		jobName = "windowJoin";
+		instanceSetName = "1_center_20_slots_2_edge_1_slot";
 	}
 
 	@Test

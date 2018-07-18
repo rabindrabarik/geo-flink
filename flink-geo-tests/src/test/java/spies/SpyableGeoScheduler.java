@@ -15,20 +15,32 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 public class SpyableGeoScheduler extends GeoScheduler implements SpyableScheduler {
+
+	private Set<SchedulingDecisionSpy> spies = new HashSet<>();
+
 	/**
 	 * Creates a new scheduler.
 	 *
 	 * @param executor the executor to run futures on
+	 * @param spy a spy to notify of scheduling decisions
 	 */
+	public SpyableGeoScheduler(Executor executor, SchedulingDecisionSpy spy) {
+		super(executor);
+		spies.add(spy);
+	}
+
 	public SpyableGeoScheduler(Executor executor) {
 		super(executor);
 	}
 
-	private Set<SchedulingDecisionSpy> spies = new HashSet<>();
-
 	@Override
 	public void addSchedulingDecisionSpy(SchedulingDecisionSpy spy) {
 		spies.add(spy);
+	}
+
+	@Override
+	public Set<SchedulingDecisionSpy> getSpies() {
+		return spies;
 	}
 
 	@Override
