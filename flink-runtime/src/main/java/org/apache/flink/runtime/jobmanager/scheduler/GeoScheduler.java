@@ -28,6 +28,7 @@ public class GeoScheduler extends Scheduler {
 
 	private Map<GeoLocation, Set<Instance>> allInstancesByGeoLocation = new HashMap<>();
 	private Map<ExecutionGraph, OptimisationModelSolution> solutions = new HashMap<>();
+	private BandwidthProvider bandwidthProvider;
 
 	/**
 	 * Creates a new scheduler.
@@ -36,6 +37,18 @@ public class GeoScheduler extends Scheduler {
 	 */
 	public GeoScheduler(Executor executor) {
 		super(executor);
+	}
+
+	/**
+	 * Creates a new scheduler.
+	 *
+	 * @param executor            the executor to run futures on
+	 * @param bandwidthProvider	  the bandwidth provider that will tell this scheduler the bandwidths between
+	 *                            {@link GeoLocation}
+	 */
+	public GeoScheduler(Executor executor, BandwidthProvider bandwidthProvider) {
+		super(executor);
+		this.bandwidthProvider = bandwidthProvider;
 	}
 
 	@Override
@@ -143,5 +156,13 @@ public class GeoScheduler extends Scheduler {
 
 	public void addGraphSolution(ExecutionGraph executionGraph, OptimisationModelSolution solution) {
 		solutions.put(executionGraph, solution);
+	}
+
+	public BandwidthProvider getBandwidthProvider() {
+		return bandwidthProvider;
+	}
+
+	public void setBandwidthProvider(BandwidthProvider bandwidthProvider) {
+		this.bandwidthProvider = bandwidthProvider;
 	}
 }

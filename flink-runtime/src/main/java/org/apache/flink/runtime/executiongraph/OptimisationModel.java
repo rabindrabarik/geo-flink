@@ -10,6 +10,7 @@ import gurobi.GRBVar;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobVertex;
+import org.apache.flink.runtime.jobmanager.scheduler.BandwidthProvider;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.types.TwoKeysMap;
@@ -27,7 +28,7 @@ public class OptimisationModel {
 	// Constants //
 	private final Iterable<JobVertex> vertices;
 	private final Set<GeoLocation> locations;
-	private final TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths;
+	private final BandwidthProvider bandwidthProvider;
 	private final Map<GeoLocation, Integer> slots;
 	private final Map<JobVertex, GeoLocation> placedVertices;
 
@@ -50,7 +51,7 @@ public class OptimisationModel {
 	public OptimisationModel(Collection<JobVertex> vertices,
 							 Set<GeoLocation> locations,
 							 Map<JobVertex, GeoLocation> placedVertices,
-							 TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths,
+							 BandwidthProvider bandwidthProvider,
 							 Map<GeoLocation, Integer> slots,
 							 GeoScheduler scheduler,
 							 double networkCostWeight,
@@ -62,7 +63,7 @@ public class OptimisationModel {
 
 		this.vertices = Preconditions.checkNotNull(vertices);
 		this.locations = Preconditions.checkNotNull(locations);
-		this.bandwidths = Preconditions.checkNotNull(bandwidths);
+		this.bandwidthProvider = Preconditions.checkNotNull(bandwidthProvider);
 
 		this.placedVertices = Preconditions.checkNotNull(placedVertices);
 
@@ -175,8 +176,8 @@ public class OptimisationModel {
 							//add to the network cost the edge, if source and destinations are not placed in the same site
 							if(!locationFrom.equals(locationTo)) {
 								double bandwidth;
-								if(bandwidths.containsKey(locationFrom, locationTo)) {
-									bandwidth = bandwidths.get(locationFrom, locationTo);
+								if(bandwidthProvider.hasBandwidth(locationFrom, locationTo)) {
+									bandwidth = bandwidthProvider.getBandwidth(locationFrom, locationTo);
 								} else {
 									bandwidth = 1;
 								}

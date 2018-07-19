@@ -2,11 +2,14 @@ import org.apache.commons.io.FileUtils;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.FileSystem;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.test.examples.join.WindowJoinData;
 import org.apache.flink.test.util.MiniClusterResource;
+import org.apache.flink.types.TwoKeysMap;
+import org.apache.flink.types.TwoKeysMultiMap;
 import org.junit.Before;
 import org.junit.Test;
 import spies.SpyableScheduler;
@@ -26,6 +29,11 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 		super(scheduler, miniClusterType);
 	}
 
+	public static GeoLocation center = new GeoLocation("center");
+	public static GeoLocation edge1 = new GeoLocation("edge1");
+	public static GeoLocation edge2 = new GeoLocation("edge2");
+	public static GeoLocation edge3 = new GeoLocation("edge3");
+
 	@Override
 	public Map<String, Integer> getGeoLocationSlotMap() {
 		if(geoLocationSlotMap != null) {
@@ -38,6 +46,28 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 			geoLocationSlotMap.put("edge3", 4);
 		}
 		return geoLocationSlotMap;
+	}
+
+	@Override
+	public TwoKeysMap<GeoLocation, GeoLocation, Double> getBandwidths() {
+		TwoKeysMap <GeoLocation, GeoLocation, Double> bandwidths = new TwoKeysMultiMap<>();
+		bandwidths.put(center, edge1, 1d);
+		bandwidths.put(center, edge2, 1d);
+		bandwidths.put(center, edge3, 1d);
+
+		bandwidths.put(edge1, center, 1d);
+		bandwidths.put(edge1, edge2, 1d);
+		bandwidths.put(edge1, edge3, 1d);
+
+		bandwidths.put(edge2, center, 1d);
+		bandwidths.put(edge2, edge1, 1d);
+		bandwidths.put(edge2, edge3, 1d);
+
+		bandwidths.put(edge3, center, 1d);
+		bandwidths.put(edge3, edge2, 1d);
+		bandwidths.put(edge3, edge1, 1d);
+
+		return bandwidths;
 	}
 
 	@Before
@@ -61,19 +91,19 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 		}
 
 		try {
-			final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+			final StreamExecutionEnvironment env = getEnvironment();
 			env.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
 
 			DataStream<Tuple2<String, Integer>> grades = env
 				.fromElements(WindowJoinData.GRADES_INPUT.split("\n"))
-				.setSourceSize(2)
 				.setGeoLocationKey("edge1")
-				.map(new Parser(),0.3);
+				.map(new Parser(),1);
 
 			DataStream<Tuple2<String, Integer>> salaries = env
 				.fromElements(WindowJoinData.SALARIES_INPUT.split("\n"))
+				.setSourceSize(2)
 				.setGeoLocationKey("edge2")
-				.map(new Parser(), 0.5);
+				.map(new Parser(), 1);
 
 			org.apache.flink.streaming.examples.join.WindowJoin
 				.runWindowJoin(grades, salaries, 100)

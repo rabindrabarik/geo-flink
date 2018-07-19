@@ -4,6 +4,7 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.SlotProfile;
 import org.apache.flink.runtime.jobmanager.scheduler.ScheduledUnit;
 import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.StaticBandwidthProvider;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.apache.flink.runtime.jobmaster.SlotRequestId;
 
@@ -52,5 +53,11 @@ public class SpyableFlinkScheduler extends Scheduler implements SpyableScheduler
 			}
 		});
 		return scheduledSlotFuture;
+	}
+
+	public void setBandwidthProvider(StaticBandwidthProvider bandwidthProvider) {
+		for (SchedulingDecisionSpy spy : spies) {
+			spy.setBandwidthProvider(bandwidthProvider);
+		}
 	}
 }

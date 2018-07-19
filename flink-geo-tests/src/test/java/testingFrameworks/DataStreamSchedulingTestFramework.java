@@ -2,11 +2,14 @@ package testingFrameworks;
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GeoSchedulerTestingUtilsOptions;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.StaticBandwidthProvider;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.test.util.MiniClusterResource;
-import org.apache.flink.test.util.TestEnvironment;
+import org.apache.flink.types.TwoKeysMap;
 import org.apache.flink.util.TestLogger;
 import org.junit.After;
 import org.junit.Ignore;
@@ -75,6 +78,13 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 
 	public DataStreamSchedulingTestFramework(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
 		this.scheduler = scheduler;
+
+		 if(scheduler instanceof  SpyableGeoScheduler) {
+			 ((SpyableGeoScheduler) scheduler).setBandwidthProvider(new StaticBandwidthProvider(getBandwidths()));
+		 } else if (scheduler instanceof  SpyableFlinkScheduler) {
+			 ((SpyableFlinkScheduler) scheduler).setBandwidthProvider(new StaticBandwidthProvider(getBandwidths()));
+		 }
+
 		this.miniClusterType = miniClusterType;
 		this.numberSlotsPerTaskManager = getSlotAverage(getGeoLocationSlotMap());
 		this.numberTaskManagers = getGeoLocationSlotMap().isEmpty() ? 1 : getGeoLocationSlotMap().size();
@@ -99,6 +109,12 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 	 */
 	public abstract Map<String, Integer> getGeoLocationSlotMap();
 
+
+	/**
+	 * @return a map from two geolocations to the bandwidth from the first to the second.
+	 * */
+	public abstract TwoKeysMap<GeoLocation, GeoLocation, Double> getBandwidths();
+
 	@Rule
 	public SchedulerInjectingMiniClusterResource makeMiniClusterResource() {
 		return new SchedulerInjectingMiniClusterResource(
@@ -107,8 +123,8 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 			miniClusterType);
 	}
 
-	protected TestEnvironment getEnvironment() {
-		return miniClusterResource.getTestEnvironment();
+	protected StreamExecutionEnvironment getEnvironment() {
+		return StreamExecutionEnvironment.getExecutionEnvironment();
 	}
 
 	@After

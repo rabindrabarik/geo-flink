@@ -260,15 +260,18 @@ public class SchedulerTestUtils {
 
 	/**
 	 * Make an ExecutionGraph using many default dummy values and the provided {@link Scheduler}. Note that providing a {@link GeoScheduler}
-	 * will trigger a {@link OptimisationModel} solving. In this case, placed vertices and bandwidths can also be provided.
+	 * will trigger a {@link OptimisationModel} solving. In this case, placed vertices can also be provided.
 	 * */
-	public static ExecutionGraph makeExecutionGraph(JobVertex[] vertices, Logger log, Scheduler scheduler, @Nullable  Map<JobVertex, GeoLocation> placedVertices, @Nullable TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths) throws JobException, JobExecutionException {
-		if(placedVertices == null) {
-			placedVertices = new HashMap<>();
+	public static ExecutionGraph makeExecutionGraph(JobVertex[] vertices, Logger log, Scheduler scheduler, @Nullable  Map<JobVertex, GeoLocation> placedVertices) throws JobException, JobExecutionException {
+		if(placedVertices != null) {
+			for (JobVertex vertex : vertices) {
+				if (placedVertices.containsKey(vertex)) {
+					vertex.setGeoLocationKey(placedVertices.get(vertex).getKey());
+				}
+			}
 		}
-		if(bandwidths == null) {
-			bandwidths = new TwoKeysMultiMap<>();
-		}
+
+
 		return ExecutionGraphBuilder.buildGraph(
 			null,
 			new JobGraph(vertices),
@@ -283,9 +286,7 @@ public class SchedulerTestUtils {
 			new UnregisteredMetricsGroup(),
 			new VoidBlobWriter(),
 			Time.seconds(1L),
-			log,
-			placedVertices,
-			bandwidths);
+			log);
 	}
 
 }

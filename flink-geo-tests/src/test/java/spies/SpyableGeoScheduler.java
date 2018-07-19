@@ -4,6 +4,7 @@ import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.SlotProfile;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.OptimisationModelSolution;
+import org.apache.flink.runtime.jobmanager.scheduler.BandwidthProvider;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.ScheduledUnit;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
@@ -62,6 +63,14 @@ public class SpyableGeoScheduler extends GeoScheduler implements SpyableSchedule
 		for (SchedulingDecisionSpy spy : spies) {
 			spy.setModelSolveTime(executionGraph, solution.getExecutionTime());
 
+		}
+	}
+
+	@Override
+	public void setBandwidthProvider(BandwidthProvider bandwidthProvider) {
+		super.setBandwidthProvider(bandwidthProvider);
+		for (SchedulingDecisionSpy spy : spies) {
+			spy.setBandwidthProvider(bandwidthProvider);
 		}
 	}
 }

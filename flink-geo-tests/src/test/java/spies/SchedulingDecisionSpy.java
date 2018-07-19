@@ -8,8 +8,11 @@ import org.apache.flink.runtime.executiongraph.ExecutionVertex;
 import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
+import org.apache.flink.runtime.jobmanager.scheduler.BandwidthProvider;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.StaticBandwidthProvider;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
+import org.apache.flink.types.TwoKeysMultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,17 +28,18 @@ import java.util.Set;
 public class SchedulingDecisionSpy {
 
 	private final static Logger log = LoggerFactory.getLogger(SchedulingDecisionSpy.class);
-
 	/**
 	 * A map storing where each execution vertex was scheduled.
 	 */
 	private final Map<ExecutionVertex, LogicalSlot> schedulingDecisions = Collections.synchronizedMap(new HashMap<>());
-
 	/**
 	 * The vertices that are considered as already placed by the {@link GeoScheduler}.
 	 */
 	private final Map<JobVertex, GeoLocation> placedVertices = new HashMap<>();
-
+	/**
+	 * The bandwidth provider for the cluster, that can tell this spy what the bandwidth between two sites is.
+	 * */
+	private BandwidthProvider bandwidthProvider;
 	/**
 	 * The time it took to solve the model associated with the execution graph (in seconds).
 	 */
@@ -86,6 +90,20 @@ public class SchedulingDecisionSpy {
 		}
 	}
 
+	/*
+	 @return the bandwidth provider for the cluster, that can tell this spy what the bandwidth between two sites is
+	* **/
+	public BandwidthProvider getBandwidthProvider() {
+		return bandwidthProvider;
+	}
+
+	/**
+	 * Sets the bandwidth provider for the cluster, that can tell this spy what the bandwidth between two sites is
+	 */
+	public void setBandwidthProvider(BandwidthProvider bandwidthProvider) {
+		this.bandwidthProvider = bandwidthProvider;
+	}
+
 	/**
 	 * @return all the {@link ExecutionGraph} this spy knows scheduling decisions about.
 	 */
@@ -103,71 +121,121 @@ public class SchedulingDecisionSpy {
 	 */
 	public double calculateNetworkCost(ExecutionGraph graph) {
 		double networkCost = 0;
+
+		preparePlacedVertices(graph);
+
+		if(bandwidthProvider == null) {
+			bandwidthProvider = new StaticBandwidthProvider(new TwoKeysMultiMap<>());
+		}
+
+		for (ExecutionVertex consumer : graph.getAllExecutionVertices()) {
+
+			GeoLocation consumerLocation = getLocationFromAssignement(consumer);
+			if(consumerLocation == GeoLocation.UNKNOWN) {
+				return -1;
+			}
+
+			int numberOfInputsToConsumer = consumer.getNumberOfInputs();
+
+			if (numberOfInputsToConsumer == 0) {
+				//CASE 1: CONSUMER IS AN INPUT
+				networkCost += additionForSource(consumer, consumerLocation);
+
+			} else if(consumer.getProducedPartitions().isEmpty()) {
+				//CASE 2: CONSUMER IS AN OUTPUT
+				networkCost += additionForSink(consumer, consumerLocation);
+
+			} else {
+				//CASE 3: CONSUMER IS NEITHER AN INPUT NOR AN OUTPUT
+				for (int inputNumber = 0; inputNumber < numberOfInputsToConsumer; inputNumber++) {
+					//for each input to the JobVertex, get all ExecutionEdge
+					ExecutionEdge[] inputEdgesToConsumer = consumer.getInputEdges(inputNumber);
+					for (ExecutionEdge inputEdgeToConsumer : inputEdgesToConsumer) {
+						networkCost += additionForExecutionEdge(consumerLocation, inputNumber, inputEdgesToConsumer.length, inputEdgeToConsumer);
+					}
+				}
+			}
+		}
+
+
+		return networkCost;
+	}
+
+	private void preparePlacedVertices(ExecutionGraph graph) {
 		for (ExecutionJobVertex ejv : graph.getVerticesTopologically()) {
 			if(ejv.getJobVertex().getGeoLocationKey() != null) {
 				placedVertices.put(ejv.getJobVertex(), new GeoLocation(ejv.getJobVertex().getGeoLocationKey()));
 			}
 		}
+	}
 
-		for (ExecutionVertex consumer : graph.getAllExecutionVertices()) {
-			LogicalSlot consumerAssignment = schedulingDecisions.get(consumer);
-			if (consumerAssignment == null) {
-				log.error("For this method to return the correct value," +
-					" all the scheduling decisions must be communicated before running it. " +
-					"ExecutionVertex " + consumer + " scheduling decision can't be found");
-				return -1;
-			}
-			GeoLocation consumerLocation = consumerAssignment.getTaskManagerLocation().getGeoLocation();
+	private GeoLocation getLocationFromAssignement(ExecutionVertex vertex) {
+		LogicalSlot producerAssignment = schedulingDecisions.get(vertex);
 
-			int numberOfInputsToConsumer = consumer.getNumberOfInputs();
-
-			if (numberOfInputsToConsumer == 0) {
-				/*"consumer" is actually an input vertex that reads an input dataset. As Flink does not have a notion of pinned vertices,
-				 * if the input vertex is pinned to a position it means that the dataset is there. So if a scheduler schedules an input
-				 * subtask away from its dataset (the pinned position) it has to pay the cost of moving (part of) the dataset */
-				if (placedVertices.get(consumer.getJobVertex().getJobVertex()) != null && !consumerLocation.equals(placedVertices.get(consumer.getJobVertex().getJobVertex()))) {
-					networkCost += consumer.getJobVertex().getJobVertex().getSelectivity() / consumer.getTotalNumberOfParallelSubtasks();
-				}
-			} else if(consumer.getProducedPartitions().isEmpty()) {
-				/*"consumer" is actually an output vertex that produces an input dataset. As Flink does not have a notion of pinned vertices,
-				 * if the output vertex is pinned to a position it means that the dataset needs to be produced there. So if a scheduler schedules an input
-				 * subtask away from the pinned position it has to pay the cost of moving (part of) the produced dataset */
-				if (placedVertices.get(consumer.getJobVertex().getJobVertex()) != null && !consumerLocation.equals(placedVertices.get(consumer.getJobVertex().getJobVertex()))) {
-					for (JobEdge jobEdge : consumer.getJobVertex().getJobVertex().getInputs()) {
-						networkCost += jobEdge.getWeight() / consumer.getTotalNumberOfParallelSubtasks();
-					}
-				}
-			}
-
-			for (int inputNumber = 0; inputNumber < numberOfInputsToConsumer; inputNumber++) {
-				//for each input to the JobVertex, get all ExecutionEdge
-				ExecutionEdge[] inputEdgesToConsumer = consumer.getInputEdges(inputNumber);
-				for (ExecutionEdge inputEdgeToConsumer : inputEdgesToConsumer) {
-					//for each parallel ExecutionEdge of that input get where the ExecutionVertex they come from is placed
-					ExecutionVertex producer = inputEdgeToConsumer.getSource().getProducer();
-					LogicalSlot producerAssignment = schedulingDecisions.get(producer);
-					if (producerAssignment == null) {
-						log.error("For this method to return the correct value," +
-							" all the scheduling decisions must be communicated before running it. " +
-							"ExecutionVertex " + producer + " scheduling decision can't be found");
-						return -1;
-					}
-					GeoLocation producerLocation = producerAssignment.getTaskManagerLocation().getGeoLocation();
-
-					if (!producerLocation.equals(consumerLocation)) {
-						//if it is not placed in the same geolocation of this consumer
-						//add to the network cost
-						//     consumer.getJobVertex.getInputs[id_of_the_ExecutionEdge].getWeight / (how_many_parallel_ExecutionEdge_to_this_consumer * number_of_consumers)
-						//assumption verified: the n_th ExecutionEdge[] (index inputNumber) contains edges from the n_th input to the JobVertex
-						//{@link ExecutionEdgeIndexingTest}
-
-						networkCost += consumer.getJobVertex().getJobVertex().getInputs().get(inputNumber).getWeight() / (inputEdgesToConsumer.length * consumer.getTotalNumberOfParallelSubtasks());
-					}
-				}
-			}
+		if (producerAssignment == null) {
+			log.error("For this method to return the correct value," +
+				" all the scheduling decisions must be communicated before running it. " +
+				"ExecutionVertex " + vertex + " scheduling decision can't be found");
+			return GeoLocation.UNKNOWN;
 		}
 
+		return  producerAssignment.getTaskManagerLocation().getGeoLocation();
+	}
 
+	/**
+	 * "source" reads an input dataset/queue/etc. As Flink does not have a notion of pinned vertices,
+	 * if the input vertex is pinned to a position it means that the dataset is there. So if a scheduler schedules an input
+	 * subtask away from its dataset (the pinned position) it has to pay the cost of moving (part of) the dataset.
+	 */
+	private double additionForSource(ExecutionVertex source, GeoLocation sourceLocation) {
+		if (placedVertices.get(source.getJobVertex().getJobVertex()) != null && !sourceLocation.equals(placedVertices.get(source.getJobVertex().getJobVertex()))) {
+			double bandwidth = bandwidthProvider.getBandwidth(placedVertices.get(source.getJobVertex().getJobVertex()), sourceLocation);
+			return (source.getJobVertex().getJobVertex().getSelectivity() / source.getTotalNumberOfParallelSubtasks()) / bandwidth;
+		} else {
+			return 0;
+		}
+	}
+
+	/**
+	 * "sink" is an output vertex that produces an input dataset/writes to a queue/etc. As Flink does not have a notion of pinned vertices,
+	 * if the output vertex is pinned to a position it means that the dataset needs to be produced there. So if a scheduler schedules an input
+	 * subtask away from the pinned position it has to pay the cost of moving (part of) the produced dataset
+	 */
+	private double additionForSink(ExecutionVertex sink, GeoLocation sinkLocation) {
+		double networkCost = 0;
+
+		if (placedVertices.get(sink.getJobVertex().getJobVertex()) != null && !sinkLocation.equals(placedVertices.get(sink.getJobVertex().getJobVertex()))) {
+			for (JobEdge jobEdge : sink.getJobVertex().getJobVertex().getInputs()) {
+				double bandwidth = bandwidthProvider.getBandwidth(sinkLocation, placedVertices.get(sink.getJobVertex().getJobVertex()));
+				networkCost += (jobEdge.getWeight() / sink.getTotalNumberOfParallelSubtasks()) / bandwidth;
+			}
+		}
+		return networkCost;
+	}
+
+	private double additionForExecutionEdge(GeoLocation consumerLocation, int inputNumber, int numberOfParallelEdges, ExecutionEdge executionEdge) {
+		double networkCost = 0;
+
+		//gets this edge producer and consumer
+		ExecutionVertex producer = executionEdge.getSource().getProducer();
+		ExecutionVertex consumer = executionEdge.getTarget();
+
+		//get where the ExecutionVertex this edge comes from is placed
+		GeoLocation producerLocation = getLocationFromAssignement(producer);
+		if(producerLocation == GeoLocation.UNKNOWN) {
+			//return -1;
+		}
+
+		if (!producerLocation.equals(consumerLocation)) {
+			//if it is not placed in the same geolocation of this consumer
+			//add to the network cost
+			//     consumer.getJobVertex.getInputs[id_of_the_ExecutionEdge].getWeight / (how_many_parallel_ExecutionEdge_to_this_consumer * number_of_consumers)
+			//assumption verified: the n_th ExecutionEdge[] (index inputNumber) contains edges from the n_th input to the JobVertex
+			//{@link ExecutionEdgeIndexingTest}
+
+			double bandwidth = bandwidthProvider.getBandwidth(producerLocation, consumerLocation);
+			networkCost += (consumer.getJobVertex().getJobVertex().getInputs().get(inputNumber).getWeight() / (numberOfParallelEdges * consumer.getTotalNumberOfParallelSubtasks())) / bandwidth;
+		}
 		return networkCost;
 	}
 

@@ -2,6 +2,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.FileSystem;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.collector.selector.SelectivityAwareOutputSelector;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -9,6 +10,8 @@ import org.apache.flink.streaming.api.datastream.SplitStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.test.examples.join.WindowJoinData;
 import org.apache.flink.test.util.MiniClusterResource;
+import org.apache.flink.types.TwoKeysMap;
+import org.apache.flink.types.TwoKeysMultiMap;
 import org.junit.Before;
 import org.junit.Test;
 import spies.SpyableScheduler;
@@ -39,6 +42,11 @@ public class SelectionDataStreamSchedulingTest extends DataStreamSchedulingTestF
 			geoLocationSlotMap.put("edge2", 4);
 		}
 		return geoLocationSlotMap;
+	}
+
+	@Override
+	public TwoKeysMap<GeoLocation, GeoLocation, Double> getBandwidths() {
+		return new TwoKeysMultiMap<>();
 	}
 
 	@Before

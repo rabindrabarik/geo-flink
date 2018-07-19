@@ -58,8 +58,6 @@ import org.apache.flink.runtime.jobmaster.slotpool.SlotProvider;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.state.StateBackendLoader;
 import org.apache.flink.runtime.util.GRBUtils;
-import org.apache.flink.types.TwoKeysMap;
-import org.apache.flink.types.TwoKeysMultiMap;
 import org.apache.flink.util.DynamicCodeLoadingException;
 import org.apache.flink.util.SerializedValue;
 import org.slf4j.Logger;
@@ -123,55 +121,8 @@ public class ExecutionGraphBuilder {
 			-1,
 			blobWriter,
 			allocationTimeout,
-			log,
-			makePlacedVertices(jobGraph),
-			new TwoKeysMultiMap<>());
+			log);
 	}
-
-	/**
-	 * Builds the ExecutionGraph from the JobGraph.
-	 * If a prior execution graph exists, the JobGraph will be attached. If no prior execution
-	 * graph exists, then the JobGraph will become attach to a new empty execution graph.
-	 */
-	public static ExecutionGraph buildGraph(
-		@Nullable ExecutionGraph prior,
-		JobGraph jobGraph,
-		Configuration jobManagerConfig,
-		ScheduledExecutorService futureExecutor,
-		Executor ioExecutor,
-		SlotProvider slotProvider,
-		ClassLoader classLoader,
-		CheckpointRecoveryFactory recoveryFactory,
-		Time rpcTimeout,
-		RestartStrategy restartStrategy,
-		MetricGroup metrics,
-		BlobWriter blobWriter,
-		Time allocationTimeout,
-		Logger log,
-		Map<JobVertex, GeoLocation> placedVertices,
-		TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths)
-		throws JobExecutionException, JobException {
-
-		return buildGraph(
-			prior,
-			jobGraph,
-			jobManagerConfig,
-			futureExecutor,
-			ioExecutor,
-			slotProvider,
-			classLoader,
-			recoveryFactory,
-			rpcTimeout,
-			restartStrategy,
-			metrics,
-			-1,
-			blobWriter,
-			allocationTimeout,
-			log,
-			placedVertices,
-			bandwidths);
-	}
-
 
 	/**
 	 * Builds the ExecutionGraph from the JobGraph.
@@ -196,51 +147,6 @@ public class ExecutionGraphBuilder {
 		Time allocationTimeout,
 		Logger log)
 		throws JobExecutionException, JobException {
-		return buildGraph(
-			prior,
-			jobGraph,
-			jobManagerConfig,
-			futureExecutor,
-			ioExecutor,
-			slotProvider,
-			classLoader,
-			recoveryFactory,
-			rpcTimeout,
-			restartStrategy,
-			metrics,
-			parallelismForAutoMax,
-			blobWriter,
-			allocationTimeout,
-			log,
-			makePlacedVertices(jobGraph),
-			new TwoKeysMultiMap<>());
-	}
-
-	/**
-	 * Builds the ExecutionGraph from the JobGraph.
-	 * If a prior execution graph exists, the JobGraph will be attached. If no prior execution
-	 * graph exists, then the JobGraph will become attach to a new empty execution graph.
-	 */
-	@Deprecated
-	public static ExecutionGraph buildGraph(
-		@Nullable ExecutionGraph prior,
-		JobGraph jobGraph,
-		Configuration jobManagerConfig,
-		ScheduledExecutorService futureExecutor,
-		Executor ioExecutor,
-		SlotProvider slotProvider,
-		ClassLoader classLoader,
-		CheckpointRecoveryFactory recoveryFactory,
-		Time rpcTimeout,
-		RestartStrategy restartStrategy,
-		MetricGroup metrics,
-		int parallelismForAutoMax,
-		BlobWriter blobWriter,
-		Time allocationTimeout,
-		Logger log,
-		Map<JobVertex, GeoLocation> placedVertices,
-		TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths)
-		throws JobExecutionException, JobException {
 
 		checkNotNull(jobGraph, "job graph cannot be null");
 
@@ -260,7 +166,7 @@ public class ExecutionGraphBuilder {
 
 		setAllEdgeWeights(jobGraph);
 
-		OptimisationModelSolution solution = solveOptimisationModel(jobGraph, slotProvider, log, makePlacedVertices(jobGraph), bandwidths);
+		OptimisationModelSolution solution = solveOptimisationModel(jobGraph, slotProvider, log, makePlacedVertices(jobGraph));
 
 
 		if (solution == null && slotProvider instanceof GeoScheduler) {
@@ -345,7 +251,7 @@ public class ExecutionGraphBuilder {
 		return placedVertices;
 	}
 
-	private static OptimisationModelSolution solveOptimisationModel(JobGraph jobGraph, SlotProvider slotProvider, Logger log, Map<JobVertex, GeoLocation> placedVertices, TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths) {
+	private static OptimisationModelSolution solveOptimisationModel(JobGraph jobGraph, SlotProvider slotProvider, Logger log, Map<JobVertex, GeoLocation> placedVertices) {
 		if (slotProvider instanceof GeoScheduler) {
 			GeoScheduler geoScheduler = (GeoScheduler) slotProvider;
 
@@ -356,7 +262,7 @@ public class ExecutionGraphBuilder {
 					jobGraph.getVerticesSortedTopologicallyFromSources(),
 					geoScheduler.getAllInstancesByGeoLocation().keySet(),
 					placedVertices,
-					bandwidths,
+					geoScheduler.getBandwidthProvider(),
 					geoScheduler.calculateAvailableSlotsByGeoLocation(),
 					geoScheduler,
 					0.5d,
