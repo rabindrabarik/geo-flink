@@ -51,6 +51,7 @@ import org.apache.flink.streaming.api.checkpoint.WithMasterCheckpointHook;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
+import org.apache.flink.streaming.api.operators.GeoLocationAwareOperator;
 import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.runtime.partitioner.ForwardPartitioner;
 import org.apache.flink.streaming.runtime.partitioner.RescalePartitioner;
@@ -404,6 +405,13 @@ public class StreamingJobGraphGenerator {
 
 		jobVertex.setSelectivity(chainedSelectivities.get(streamNodeId));
 
+		StreamOperator<?> chainHeadOperator = streamGraph.getStreamNode(streamNodeId).getOperator();
+		if(chainHeadOperator instanceof GeoLocationAwareOperator) {
+			jobVertex.setGeoLocationKey(((GeoLocationAwareOperator) chainHeadOperator).getGeoLocationKey());
+		} else {
+			jobVertex.setGeoLocationKey(null);
+		}
+
 		int parallelism = streamNode.getParallelism();
 
 		if (parallelism > 0) {
@@ -530,6 +538,19 @@ public class StreamingJobGraphGenerator {
 		}
 	}
 
+	/**
+	 * @return true if all of the following is true, false otherwise:
+	 * <ul>
+	 *     <li>The downstream vertex has only 1 input</li>
+	 *     <li>The two operators are not null</li>
+	 *     <li>The two vertices are in the same slot sharing group</li>
+	 *     <li>The downstream operator chaining strategy is {@link ChainingStrategy#ALWAYS} </li>
+	 *     <li>The upstream operator chaining strategy is {@link ChainingStrategy#ALWAYS} or {@link ChainingStrategy#HEAD}</li>
+	 *     <li>This edge forwards the items only to local running copies of the downstream operator</li>
+	 *     <li>The two vertices have the same parallelism</li>
+	 *     <li>Chaining is enabled</li>
+	 * </ul>
+	 * */
 	public static boolean isChainable(StreamEdge edge, StreamGraph streamGraph) {
 		StreamNode upStreamVertex = edge.getSourceVertex();
 		StreamNode downStreamVertex = edge.getTargetVertex();

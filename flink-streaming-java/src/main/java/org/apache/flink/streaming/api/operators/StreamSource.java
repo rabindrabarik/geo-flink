@@ -39,13 +39,15 @@ import java.util.concurrent.ScheduledFuture;
  */
 @Internal
 public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
-		extends AbstractUdfStreamOperator<OUT, SRC> implements StreamOperator<OUT> {
+		extends AbstractUdfStreamOperator<OUT, SRC> implements StreamOperator<OUT>, GeoLocationAwareOperator {
 
 	private static final long serialVersionUID = 1L;
 
 	private transient SourceFunction.SourceContext<OUT> ctx;
 
 	private transient volatile boolean canceledOrStopped = false;
+
+	private String geoLocationKey;
 
 	public StreamSource(SRC sourceFunction) {
 		super(sourceFunction);
@@ -149,6 +151,15 @@ public class StreamSource<OUT, SRC extends SourceFunction<OUT>>
 		this.selectivity = sourceSize;
 	}
 
+	@Override
+	public String getGeoLocationKey() {
+		return geoLocationKey;
+	}
+
+	@Override
+	public void setGeoLocationKey(String geoLocationKey) {
+		this.geoLocationKey = geoLocationKey;
+	}
 
 	private static class LatencyMarksEmitter<OUT> {
 		private final ScheduledFuture<?> latencyMarkTimer;

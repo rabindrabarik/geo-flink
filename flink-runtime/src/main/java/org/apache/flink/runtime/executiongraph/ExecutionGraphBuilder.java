@@ -124,7 +124,7 @@ public class ExecutionGraphBuilder {
 			blobWriter,
 			allocationTimeout,
 			log,
-			new HashMap<>(),
+			makePlacedVertices(jobGraph),
 			new TwoKeysMultiMap<>());
 	}
 
@@ -212,7 +212,7 @@ public class ExecutionGraphBuilder {
 			blobWriter,
 			allocationTimeout,
 			log,
-			new HashMap<>(),
+			makePlacedVertices(jobGraph),
 			new TwoKeysMultiMap<>());
 	}
 
@@ -260,7 +260,7 @@ public class ExecutionGraphBuilder {
 
 		setAllEdgeWeights(jobGraph);
 
-		OptimisationModelSolution solution = solveOptimisationModel(jobGraph, slotProvider, log, placedVertices, bandwidths);
+		OptimisationModelSolution solution = solveOptimisationModel(jobGraph, slotProvider, log, makePlacedVertices(jobGraph), bandwidths);
 
 
 		if (solution == null && slotProvider instanceof GeoScheduler) {
@@ -333,6 +333,16 @@ public class ExecutionGraphBuilder {
 
 
 		return executionGraph;
+	}
+
+	private static Map<JobVertex, GeoLocation> makePlacedVertices(JobGraph jobGraph) {
+		Map<JobVertex, GeoLocation> placedVertices = new HashMap<>();
+		for (JobVertex jobVertex : jobGraph.getVertices()) {
+			if(jobVertex.getGeoLocationKey() != null) {
+				placedVertices.put(jobVertex, new GeoLocation(jobVertex.getGeoLocationKey()));
+			}
+		}
+		return placedVertices;
 	}
 
 	private static OptimisationModelSolution solveOptimisationModel(JobGraph jobGraph, SlotProvider slotProvider, Logger log, Map<JobVertex, GeoLocation> placedVertices, TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths) {

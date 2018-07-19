@@ -29,7 +29,7 @@ import org.apache.flink.streaming.runtime.tasks.ProcessingTimeService;
  */
 @Internal
 public class StreamSink<IN> extends AbstractUdfStreamOperator<Object, SinkFunction<IN>>
-		implements OneInputStreamOperator<IN, Object> {
+		implements OneInputStreamOperator<IN, Object>, GeoLocationAwareOperator {
 
 	private static final long serialVersionUID = 1L;
 
@@ -37,6 +37,8 @@ public class StreamSink<IN> extends AbstractUdfStreamOperator<Object, SinkFuncti
 
 	/** We listen to this ourselves because we don't have an {@link InternalTimerService}. */
 	private long currentWatermark = Long.MIN_VALUE;
+
+	private String geoLocationKey;
 
 	public StreamSink(SinkFunction<IN> sinkFunction) {
 		super(sinkFunction);
@@ -68,6 +70,16 @@ public class StreamSink<IN> extends AbstractUdfStreamOperator<Object, SinkFuncti
 	public void processWatermark(Watermark mark) throws Exception {
 		super.processWatermark(mark);
 		this.currentWatermark = mark.getTimestamp();
+	}
+
+	@Override
+	public void setGeoLocationKey(String geoLocationKey) {
+		this.geoLocationKey = geoLocationKey;
+	}
+
+	@Override
+	public String getGeoLocationKey() {
+		return geoLocationKey;
 	}
 
 	private class SimpleContext<IN> implements SinkFunction.Context<IN> {

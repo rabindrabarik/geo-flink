@@ -19,6 +19,7 @@ package org.apache.flink.streaming.api.datastream;
 
 import org.apache.flink.annotation.Public;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.operators.StreamSource;
@@ -66,6 +67,23 @@ public class DataStreamSource<T> extends SingleOutputStreamOperator<T> {
 	public DataStreamSource<T> setSourceSize(double sourceSize) {
 		((SourceTransformation<T>) transformation).setSourceSize(sourceSize);
 		return this;
+	}
+
+	/**
+	 * Sets the {@link GeoLocation} key for this stream source. If set to the key of the {@link GeoLocation}
+	 * where the data is produced it will lead to better scheduling decisions when using a {@link GeoScheduler}
+	 * */
+	public DataStreamSource<T> setGeoLocationKey(String geoLocationKey) {
+		((SourceTransformation<T>) transformation).setGeoLocationKey(geoLocationKey);
+		return this;
+	}
+
+	/**
+	 * @return the {@link GeoLocation} key for this stream source. If set to the key of the {@link GeoLocation}
+	 * where the data is produced it will lead to better scheduling decisions when using a {@link GeoScheduler}
+	 * */
+	public String getGeoLocationKey() {
+		return ((SourceTransformation<T>) transformation).getGeoLocationKey();
 	}
 
 	@Override

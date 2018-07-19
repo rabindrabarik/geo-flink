@@ -22,10 +22,11 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
+import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.StreamSink;
-
-import org.apache.flink.shaded.guava18.com.google.common.collect.Lists;
 
 import java.util.Collection;
 import java.util.List;
@@ -117,5 +118,21 @@ public class SinkTransformation<T> extends StreamTransformation<Object> {
 	@Override
 	public final void setChainingStrategy(ChainingStrategy strategy) {
 		operator.setChainingStrategy(strategy);
+	}
+
+	/**
+	 * Sets the {@link GeoLocation} key for this stream source. If set to the key of the {@link GeoLocation}
+	 * where the data is produced it will lead to better scheduling decisions when using a {@link GeoScheduler}
+	 * */
+	public void setGeoLocationKey(String geoLocationKey) {
+		operator.setGeoLocationKey(geoLocationKey);
+	}
+
+	/**
+	 * @return the {@link GeoLocation} key for this stream source. If set to the key of the {@link GeoLocation}
+	 * where the data is produced it will lead to better scheduling decisions when using a {@link GeoScheduler}
+	 * */
+	public String getGeoLocationKey() {
+		return operator.getGeoLocationKey();
 	}
 }

@@ -21,6 +21,8 @@ import org.apache.flink.annotation.Internal;
 import org.apache.flink.annotation.Public;
 import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.operators.ResourceSpec;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.StreamSink;
 import org.apache.flink.streaming.api.transformations.SinkTransformation;
@@ -151,6 +153,28 @@ public class DataStreamSink<T> {
 
 		return this;
 	}
+
+	/**
+	 * Sets the {@link GeoLocation} key for this stream source. If set to the key of the {@link GeoLocation}
+	 * where the data is needed to be produced it will lead to better scheduling decisions when using a {@link GeoScheduler}.
+	 * Note that, however, the {@link ChainingStrategy} for outputs is usually {@link ChainingStrategy#ALWAYS},
+	 * and in that case this parameter will be ignored, as the sink is chained together with the previous operator(s).
+	 * To override that use {@link #getTransformation()} and then {@link SinkTransformation#setChainingStrategy(ChainingStrategy)}
+	 * setting it to {@link ChainingStrategy#NEVER}
+	 * */
+	public DataStreamSink<T> setGeoLocationKey(String geoLocationKey) {
+		((SinkTransformation<T>) transformation).setGeoLocationKey(geoLocationKey);
+		return this;
+	}
+
+	/**
+	 * @return the {@link GeoLocation} key for this stream source. If set to the key of the {@link GeoLocation}
+	 * where the data is needed to be produced it will lead to better scheduling decisions when using a {@link GeoScheduler}
+	 * */
+	public String getGeoLocationKey() {
+		return ((SinkTransformation<T>) transformation).getGeoLocationKey();
+	}
+
 
 	/**
 	 * Turns off chaining for this operator so thread co-location will not be

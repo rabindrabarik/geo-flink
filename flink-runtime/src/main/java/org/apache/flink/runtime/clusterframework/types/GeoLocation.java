@@ -3,19 +3,19 @@ package org.apache.flink.runtime.clusterframework.types;
 public class GeoLocation {
 	public static GeoLocation UNKNOWN = new GeoLocation("UNKNOWN");
 
-	private String geoLocationName;
+	private String key;
 
-	public GeoLocation(String geoLocationName) {
-		this.geoLocationName = geoLocationName;
+	public GeoLocation(String key) {
+		this.key = key;
 	}
 
-	public String getGeoLocationName() {
-		return geoLocationName;
+	public String getKey() {
+		return key;
 	}
 
 	@Override
 	public String toString() {
-		return geoLocationName;
+		return key;
 	}
 
 	@Override
@@ -25,7 +25,7 @@ public class GeoLocation {
 		} else if (o == null || o.getClass() != getClass()) {
 			return false;
 		} else {
-			return geoLocationName.equals(((GeoLocation) o).geoLocationName);
+			return key.equals(((GeoLocation) o).key);
 		}
 	}
 }

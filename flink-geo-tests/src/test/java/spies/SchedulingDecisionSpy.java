@@ -5,6 +5,7 @@ import org.apache.flink.runtime.executiongraph.ExecutionEdge;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.ExecutionJobVertex;
 import org.apache.flink.runtime.executiongraph.ExecutionVertex;
+import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
@@ -102,6 +103,11 @@ public class SchedulingDecisionSpy {
 	 */
 	public double calculateNetworkCost(ExecutionGraph graph) {
 		double networkCost = 0;
+		for (ExecutionJobVertex ejv : graph.getVerticesTopologically()) {
+			if(ejv.getJobVertex().getGeoLocationKey() != null) {
+				placedVertices.put(ejv.getJobVertex(), new GeoLocation(ejv.getJobVertex().getGeoLocationKey()));
+			}
+		}
 
 		for (ExecutionVertex consumer : graph.getAllExecutionVertices()) {
 			LogicalSlot consumerAssignment = schedulingDecisions.get(consumer);
@@ -119,8 +125,17 @@ public class SchedulingDecisionSpy {
 				/*"consumer" is actually an input vertex that reads an input dataset. As Flink does not have a notion of pinned vertices,
 				 * if the input vertex is pinned to a position it means that the dataset is there. So if a scheduler schedules an input
 				 * subtask away from its dataset (the pinned position) it has to pay the cost of moving (part of) the dataset */
-				if (placedVertices.get(consumer.getJobVertex().getJobVertex()) == null || consumerLocation != placedVertices.get(consumer.getJobVertex().getJobVertex())) {
+				if (placedVertices.get(consumer.getJobVertex().getJobVertex()) != null && !consumerLocation.equals(placedVertices.get(consumer.getJobVertex().getJobVertex()))) {
 					networkCost += consumer.getJobVertex().getJobVertex().getSelectivity() / consumer.getTotalNumberOfParallelSubtasks();
+				}
+			} else if(consumer.getProducedPartitions().isEmpty()) {
+				/*"consumer" is actually an output vertex that produces an input dataset. As Flink does not have a notion of pinned vertices,
+				 * if the output vertex is pinned to a position it means that the dataset needs to be produced there. So if a scheduler schedules an input
+				 * subtask away from the pinned position it has to pay the cost of moving (part of) the produced dataset */
+				if (placedVertices.get(consumer.getJobVertex().getJobVertex()) != null && !consumerLocation.equals(placedVertices.get(consumer.getJobVertex().getJobVertex()))) {
+					for (JobEdge jobEdge : consumer.getJobVertex().getJobVertex().getInputs()) {
+						networkCost += jobEdge.getWeight() / consumer.getTotalNumberOfParallelSubtasks();
+					}
 				}
 			}
 
@@ -144,7 +159,7 @@ public class SchedulingDecisionSpy {
 						//add to the network cost
 						//     consumer.getJobVertex.getInputs[id_of_the_ExecutionEdge].getWeight / (how_many_parallel_ExecutionEdge_to_this_consumer * number_of_consumers)
 						//assumption verified: the n_th ExecutionEdge[] (index inputNumber) contains edges from the n_th input to the JobVertex
-						/**{@link ExecutionEdgeIndexingTest}*/
+						//{@link ExecutionEdgeIndexingTest}
 
 						networkCost += consumer.getJobVertex().getJobVertex().getInputs().get(inputNumber).getWeight() / (inputEdgesToConsumer.length * consumer.getTotalNumberOfParallelSubtasks());
 					}

@@ -22,14 +22,15 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.operators.ResourceSpec;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.InputSplitSource;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.io.network.partition.ResultPartitionType;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.jobgraph.tasks.StoppableTask;
 import org.apache.flink.runtime.jobmanager.scheduler.CoLocationGroup;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
 import org.apache.flink.util.Preconditions;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -121,6 +122,14 @@ public class JobVertex implements java.io.Serializable {
 	 * derived from the invokable class.
 	 * */
 	private double selectivity;
+
+	/**
+	 * A {@link GeoLocation} key. If not null indicates that this vertex will have to communicate with that
+	 * {@link GeoLocation}, as in an input vertex that needs to read a dataset existing on that location.
+	 * If properly set, leads to better scheduling decisions when using a {@link GeoScheduler}
+	 * for scheduling.
+	 * */
+	private String geoLocationKey;
 
 	// --------------------------------------------------------------------------------------------
 
@@ -455,15 +464,38 @@ public class JobVertex implements java.io.Serializable {
 	}
 
 	/**
-	 * Returns the selectivity of this vertex.
+	 * @return the selectivity of this vertex.
 	 * */
 	public double getSelectivity() {
 		return selectivity;
 	}
 
+	/**
+	 * Sets the selectivity of this vertex.
+	 * */
 	public void setSelectivity(double selectivity) {
 		Preconditions.checkArgument(selectivity > 0, "Selectivity must be positive");
 		this.selectivity = selectivity;
+	}
+
+	/**
+	 * @return A key for a {@link GeoLocation}. If not null indicates that this vertex will have to communicate with that
+	 * {@link GeoLocation}, as in an input vertex that needs to read a dataset existing on that location.
+	 * If properly set, leads to better scheduling decisions when using a {@link GeoScheduler}
+	 * for scheduling.
+	 */
+	public String getGeoLocationKey() {
+		return geoLocationKey;
+	}
+
+	/**
+	 * Sets A key for a {@link GeoLocation}. If not null indicates that this vertex will have to communicate with that
+	 * {@link GeoLocation}, as in an input vertex that needs to read a dataset existing on that location.
+	 * If properly set, leads to better scheduling decisions when using a {@link GeoScheduler}
+	 * for scheduling.
+	 */
+	public void setGeoLocationKey(String geoLocationKey) {
+		this.geoLocationKey = geoLocationKey;
 	}
 
 	public void updateCoLocationGroup(CoLocationGroup group) {

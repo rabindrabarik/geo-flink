@@ -20,6 +20,7 @@ package org.apache.flink.streaming.api.transformations;
 
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.StreamSource;
@@ -37,6 +38,7 @@ import java.util.Collections;
 public class SourceTransformation<T> extends StreamTransformation<T> {
 
 	private final StreamSource<T, ?> operator;
+
 
 	/**
 	 * Creates a new {@code SourceTransformation} from the given operator.
@@ -88,5 +90,21 @@ public class SourceTransformation<T> extends StreamTransformation<T> {
 	@Override
 	public final void setChainingStrategy(ChainingStrategy strategy) {
 		operator.setChainingStrategy(strategy);
+	}
+
+	/**
+	 * Sets the {@link GeoLocation} key for this stream source. If set to the key of the {@link GeoLocation}
+	 * where the data is produced it will lead to better scheduling decisions when using a {@link GeoScheduler}
+	 * */
+	public void setGeoLocationKey(String geoLocationKey) {
+		operator.setGeoLocationKey(geoLocationKey);
+	}
+
+	/**
+	 * @return the {@link GeoLocation} key for this stream source. If set to the key of the {@link GeoLocation}
+	 * where the data is produced it will lead to better scheduling decisions when using a {@link GeoScheduler}
+	 * */
+	public String getGeoLocationKey() {
+		return operator.getGeoLocationKey();
 	}
 }

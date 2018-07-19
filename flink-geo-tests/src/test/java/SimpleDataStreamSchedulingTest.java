@@ -35,6 +35,7 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 			geoLocationSlotMap.put("center", 10);
 			geoLocationSlotMap.put("edge1", 4);
 			geoLocationSlotMap.put("edge2", 4);
+			geoLocationSlotMap.put("edge3", 4);
 		}
 		return geoLocationSlotMap;
 	}
@@ -42,7 +43,7 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 	@Before
 	public void setup() {
 		jobName = "windowJoin";
-		instanceSetName = "1_center_20_slots_2_edge_1_slot";
+		instanceSetName = "1_center_20_slots_3_edge_4_slot";
 	}
 
 	@Test
@@ -66,15 +67,18 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 			DataStream<Tuple2<String, Integer>> grades = env
 				.fromElements(WindowJoinData.GRADES_INPUT.split("\n"))
 				.setSourceSize(2)
-				.map(new Parser(),0.1);
+				.setGeoLocationKey("edge1")
+				.map(new Parser(),0.3);
 
 			DataStream<Tuple2<String, Integer>> salaries = env
 				.fromElements(WindowJoinData.SALARIES_INPUT.split("\n"))
-				.map(new Parser());
+				.setGeoLocationKey("edge2")
+				.map(new Parser(), 0.5);
 
 			org.apache.flink.streaming.examples.join.WindowJoin
 				.runWindowJoin(grades, salaries, 100)
-				.writeAsText(resultPath, FileSystem.WriteMode.OVERWRITE);
+				.writeAsText(resultPath, FileSystem.WriteMode.OVERWRITE)
+				.setGeoLocationKey("edge3");
 
 			env.execute();
 
