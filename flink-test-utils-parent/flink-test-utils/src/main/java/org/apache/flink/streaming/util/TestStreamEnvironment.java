@@ -22,6 +22,7 @@ import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.cache.DistributedCache;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.Path;
+import org.apache.flink.runtime.executiongraph.OptimisationModelParameters;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.minicluster.JobExecutor;
 import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
@@ -46,6 +47,8 @@ public class TestStreamEnvironment extends StreamExecutionEnvironment {
 	private final Collection<Path> jarFiles;
 
 	private final Collection<URL> classPaths;
+
+	private OptimisationModelParameters modelParameters = OptimisationModelParameters.defaultParameters();
 
 	public TestStreamEnvironment(
 			JobExecutor jobExecutor,
@@ -78,11 +81,29 @@ public class TestStreamEnvironment extends StreamExecutionEnvironment {
 
 		jobGraph.setClasspaths(new ArrayList<>(classPaths));
 
+		jobGraph.setOptimisationModelParameters(this.modelParameters);
+
 		for (Tuple2<String, DistributedCache.DistributedCacheEntry> file : cacheFile) {
 			jobGraph.addUserArtifact(file.f0, file.f1);
 		}
 
 		return jobExecutor.executeJobBlocking(jobGraph);
+	}
+
+	/**
+	 * Set the optimisation model parameters used to solve the models associated with jobs submitted to
+	 * this environment.
+	 * */
+	public void setModelParameters(OptimisationModelParameters modelParameters) {
+		this.modelParameters = modelParameters;
+	}
+
+	/**
+	 * Get the optimisation model parameters used to solve the models associated with jobs submitted to
+	 * this environment. It is possible to modify the parameters via this object setters.
+	 * */
+	public OptimisationModelParameters getModelParameters() {
+		return modelParameters;
 	}
 
 	// ------------------------------------------------------------------------

@@ -28,18 +28,22 @@ import java.util.Set;
 public class SchedulingDecisionSpy {
 
 	private final static Logger log = LoggerFactory.getLogger(SchedulingDecisionSpy.class);
+
 	/**
 	 * A map storing where each execution vertex was scheduled.
 	 */
 	private final Map<ExecutionVertex, LogicalSlot> schedulingDecisions = Collections.synchronizedMap(new HashMap<>());
+
 	/**
 	 * The vertices that are considered as already placed by the {@link GeoScheduler}.
 	 */
 	private final Map<JobVertex, GeoLocation> placedVertices = new HashMap<>();
+
 	/**
 	 * The bandwidth provider for the cluster, that can tell this spy what the bandwidth between two sites is.
 	 * */
 	private BandwidthProvider bandwidthProvider;
+
 	/**
 	 * The time it took to solve the model associated with the execution graph (in seconds).
 	 */

@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.Set;
 
 public class OptimisationModel {
-	private final GeoScheduler scheduler;
-
 	// Constants //
 	private final Iterable<JobVertex> vertices;
 	private final Set<GeoLocation> locations;
@@ -53,10 +51,7 @@ public class OptimisationModel {
 							 Map<JobVertex, GeoLocation> placedVertices,
 							 BandwidthProvider bandwidthProvider,
 							 Map<GeoLocation, Integer> slots,
-							 GeoScheduler scheduler,
-							 double networkCostWeight,
-							 double executionTimeWeight) throws GRBException {
-		this.scheduler = Preconditions.checkNotNull(scheduler);
+							 OptimisationModelParameters parameters) throws GRBException {
 
 		this.grbEnv = new GRBEnv();
 		this.model = new GRBModel(grbEnv);
@@ -67,15 +62,15 @@ public class OptimisationModel {
 
 		this.placedVertices = Preconditions.checkNotNull(placedVertices);
 
-		this.slots = scheduler.calculateAvailableSlotsByGeoLocation();
+		this.slots = slots;
 
-		this.networkCostWeight = networkCostWeight;
-		this.executionTimeWeight = executionTimeWeight;
+		this.networkCostWeight = parameters.getNetworkCostWeight();
+		this.executionTimeWeight = parameters.getExecutionSpeedWeight();
 
 		//double the time spent on heuristics
 		model.set(GRB.DoubleParam.Heuristics, 0.1);
 
-		model.set(GRB.DoubleParam.TimeLimit, 10 * vertices.size());
+		model.set(GRB.DoubleParam.TimeLimit, parameters.getTimeForEachTaskBeforeHeuristicSolution() * vertices.size());
 
 		addPlacementVariables();
 		addParallelismVariables();
@@ -205,7 +200,7 @@ public class OptimisationModel {
 		return OptimisationModelSolution.fromSolvedModel(model, placement, parallelism, executionTime, networkCost);
 	}
 
-	String solutionString() {
+	public String solutionString() {
 		try {
 			if (isSolved()) {
 				return "Solve the model first";

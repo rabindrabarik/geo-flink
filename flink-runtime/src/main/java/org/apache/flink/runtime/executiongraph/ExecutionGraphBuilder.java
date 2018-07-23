@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.executiongraph;
 
-import gurobi.GRBException;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.time.Time;
@@ -37,7 +36,6 @@ import org.apache.flink.runtime.checkpoint.MasterTriggerRestoreHook;
 import org.apache.flink.runtime.checkpoint.hooks.MasterHooks;
 import org.apache.flink.runtime.client.JobExecutionException;
 import org.apache.flink.runtime.client.JobSubmissionException;
-import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.executiongraph.failover.FailoverStrategy;
 import org.apache.flink.runtime.executiongraph.failover.FailoverStrategyLoader;
 import org.apache.flink.runtime.executiongraph.metrics.DownTimeGauge;
@@ -45,7 +43,6 @@ import org.apache.flink.runtime.executiongraph.metrics.NumberOfFullRestartsGauge
 import org.apache.flink.runtime.executiongraph.metrics.RestartTimeGauge;
 import org.apache.flink.runtime.executiongraph.metrics.UpTimeGauge;
 import org.apache.flink.runtime.executiongraph.restart.RestartStrategy;
-import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
@@ -57,7 +54,6 @@ import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
 import org.apache.flink.runtime.jobmaster.slotpool.SlotProvider;
 import org.apache.flink.runtime.state.StateBackend;
 import org.apache.flink.runtime.state.StateBackendLoader;
-import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.util.DynamicCodeLoadingException;
 import org.apache.flink.util.SerializedValue;
 import org.slf4j.Logger;
@@ -66,9 +62,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -164,9 +158,7 @@ public class ExecutionGraphBuilder {
 			jobGraph.getUserJarBlobKeys(),
 			jobGraph.getClasspaths());
 
-		setAllEdgeWeights(jobGraph);
-
-		OptimisationModelSolution solution = solveOptimisationModel(jobGraph, slotProvider, log, makePlacedVertices(jobGraph));
+		OptimisationModelSolution solution = jobGraph.getSolution();
 
 
 		if (solution == null && slotProvider instanceof GeoScheduler) {
@@ -239,67 +231,6 @@ public class ExecutionGraphBuilder {
 
 
 		return executionGraph;
-	}
-
-	private static Map<JobVertex, GeoLocation> makePlacedVertices(JobGraph jobGraph) {
-		Map<JobVertex, GeoLocation> placedVertices = new HashMap<>();
-		for (JobVertex jobVertex : jobGraph.getVertices()) {
-			if(jobVertex.getGeoLocationKey() != null) {
-				placedVertices.put(jobVertex, new GeoLocation(jobVertex.getGeoLocationKey()));
-			}
-		}
-		return placedVertices;
-	}
-
-	private static OptimisationModelSolution solveOptimisationModel(JobGraph jobGraph, SlotProvider slotProvider, Logger log, Map<JobVertex, GeoLocation> placedVertices) {
-		if (slotProvider instanceof GeoScheduler) {
-			GeoScheduler geoScheduler = (GeoScheduler) slotProvider;
-
-			//creating and solving the model
-			OptimisationModel model;
-			try {
-				model = new OptimisationModel(
-					jobGraph.getVerticesSortedTopologicallyFromSources(),
-					geoScheduler.getAllInstancesByGeoLocation().keySet(),
-					placedVertices,
-					geoScheduler.getBandwidthProvider(),
-					geoScheduler.calculateAvailableSlotsByGeoLocation(),
-					geoScheduler,
-					0.5d,
-					-0.5d);
-
-				OptimisationModelSolution solution = model.optimize();
-
-				if(model.isSolved()) {
-
-					System.out.println("\n------------------------------");
-					System.out.println("Available slots:");
-					System.out.println(GRBUtils.mapToString(geoScheduler.calculateAvailableSlotsByGeoLocation()));
-					System.out.println("------------------------------\n");
-
-
-					System.out.println("\n------------------------------");
-					System.out.println("Model hard solution" + model.solutionString());
-					System.out.println("------------------------------\n");
-
-					System.out.println("\n------------------------------");
-					System.out.println("Model soft solution" + solution.toString());
-					System.out.println("------------------------------\n");
-
-					//applying parallelism decisions
-					for (JobVertex jobVertex : jobGraph.getVertices()) {
-						jobVertex.setParallelism(solution.getParallelism(jobVertex));
-					}
-
-					return solution;
-				} else {
-					return null;
-				}
-			} catch (GRBException e) {
-				e.printStackTrace();
-			}
-		}
-		return null;
 	}
 
 	private static void setJsonPlan(JobGraph jobGraph, Logger log, ExecutionGraph executionGraph) {
@@ -479,28 +410,6 @@ public class ExecutionGraphBuilder {
 		metrics.gauge(NumberOfFullRestartsGauge.METRIC_NAME, new NumberOfFullRestartsGauge(executionGraph));
 
 		executionGraph.getFailoverStrategy().registerMetrics(metrics);
-	}
-
-	private static void setAllEdgeWeights(JobGraph jobGraph) {
-		for(JobVertex destinationVertex : jobGraph.getVertices()) {
-			for(JobEdge edge : destinationVertex.getInputs()) {
-				JobVertex sourceVertex = edge.getSource().getProducer();
-				double sourceVertexInputsWeight = 0;
-				if(sourceVertex.isInputVertex()) {
-					//input vertices have 1 input
-					sourceVertexInputsWeight = 1;
-				} else {
-					//non input vertices have a real number of inputs, each with its size
-					for (JobEdge sourceVertexInput : sourceVertex.getInputs()) {
-						sourceVertexInputsWeight += sourceVertexInput.getWeight();
-					}
-				}
-
-				//weight is ( sourceVertexInputsWeight * sourceVertexSelectivity ) / sourceVertexOutputs
-				double weightToSet = (sourceVertexInputsWeight * sourceVertex.getSelectivity()) / edge.getSource().getProducer().getProducedDataSets().size();
-				edge.setWeight(weightToSet);
-			}
-		}
 	}
 
 	// ------------------------------------------------------------------------

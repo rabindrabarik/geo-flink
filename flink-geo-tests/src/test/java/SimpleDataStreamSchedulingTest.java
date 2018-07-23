@@ -5,8 +5,8 @@ import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.test.examples.join.WindowJoinData;
+import org.apache.flink.streaming.util.TestStreamEnvironment;
 import org.apache.flink.test.util.MiniClusterResource;
 import org.apache.flink.types.TwoKeysMap;
 import org.apache.flink.types.TwoKeysMultiMap;
@@ -91,7 +91,7 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 		}
 
 		try {
-			final StreamExecutionEnvironment env = getEnvironment();
+			final TestStreamEnvironment env = (TestStreamEnvironment) getEnvironment();
 			env.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
 
 			DataStream<Tuple2<String, Integer>> grades = env
@@ -109,6 +109,9 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 				.runWindowJoin(grades, salaries, 100)
 				.writeAsText(resultPath, FileSystem.WriteMode.OVERWRITE)
 				.setGeoLocationKey("edge3");
+
+			env.getModelParameters().setExecutionSpeedWeight(0.8);
+			env.getModelParameters().setNetworkCostWeight(0.2);
 
 			env.execute();
 

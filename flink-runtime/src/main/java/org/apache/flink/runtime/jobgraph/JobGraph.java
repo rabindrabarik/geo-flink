@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.jobgraph;
 
+import gurobi.GRBException;
 import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.JobID;
@@ -26,7 +27,13 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.blob.BlobClient;
 import org.apache.flink.runtime.blob.PermanentBlobKey;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
+import org.apache.flink.runtime.executiongraph.OptimisationModel;
+import org.apache.flink.runtime.executiongraph.OptimisationModelParameters;
+import org.apache.flink.runtime.executiongraph.OptimisationModelSolution;
 import org.apache.flink.runtime.jobgraph.tasks.JobCheckpointingSettings;
+import org.apache.flink.runtime.jobmanager.scheduler.BandwidthProvider;
+import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.SerializedValue;
 
@@ -85,6 +92,8 @@ public class JobGraph implements Serializable {
 	/** The mode in which the job is scheduled */
 	private ScheduleMode scheduleMode = ScheduleMode.LAZY_FROM_SOURCES;
 
+	private OptimisationModelParameters optimisationModelParameters = OptimisationModelParameters.defaultParameters();
+
 	// --- checkpointing ---
 
 	/** Job specific execution config */
@@ -109,6 +118,9 @@ public class JobGraph implements Serializable {
 
 	/** List of classpaths required to run this job. */
 	private List<URL> classpaths = Collections.emptyList();
+
+	/** {@link OptimisationModelSolution} representing the scheduling decision to take for this job*/
+	private OptimisationModelSolution solution = null;
 
 	// --------------------------------------------------------------------------------------------
 
@@ -369,6 +381,105 @@ public class JobGraph implements Serializable {
 
 	public List<URL> getClasspaths() {
 		return classpaths;
+	}
+
+	/**
+	 * Solve the optimisation model associated with this job graph. The solution is retrievable with {@link #getSolution()}.
+	 *
+	 * @param availableSlotsByGeoLocation the slots to schedule this garph on, grouped by geo location
+	 * @param bandwidthProvider the provider for bandwidths between locations
+	 */
+	public void solveOptimisationModel(BandwidthProvider bandwidthProvider, Map<GeoLocation, Integer> availableSlotsByGeoLocation) {
+
+		Map<JobVertex, GeoLocation> placedVertices = makePlacedVertices();
+
+		setAllEdgeWeights();
+
+		//creating and solving the model
+		OptimisationModel model;
+		try {
+			model = new OptimisationModel(
+				this.getVerticesSortedTopologicallyFromSources(),
+				availableSlotsByGeoLocation.keySet(),
+				placedVertices,
+				bandwidthProvider,
+				availableSlotsByGeoLocation,
+				optimisationModelParameters);
+
+			this.solution = model.optimize();
+
+			if (model.isSolved()) {
+
+				System.out.println("\n------------------------------");
+				System.out.println("Available slots:");
+				System.out.println(GRBUtils.mapToString(availableSlotsByGeoLocation));
+				System.out.println("------------------------------\n");
+
+
+				System.out.println("\n------------------------------");
+				System.out.println("Model hard solution" + model.solutionString());
+				System.out.println("------------------------------\n");
+
+				System.out.println("\n------------------------------");
+				System.out.println("Model soft solution" + solution.toString());
+				System.out.println("------------------------------\n");
+
+				//applying parallelism decisions
+				for (JobVertex jobVertex : this.getVertices()) {
+					jobVertex.setParallelism(solution.getParallelism(jobVertex));
+				}
+			}
+		} catch (GRBException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void setAllEdgeWeights() {
+		for(JobVertex destinationVertex : this.getVertices()) {
+			for(JobEdge edge : destinationVertex.getInputs()) {
+				JobVertex sourceVertex = edge.getSource().getProducer();
+				double sourceVertexInputsWeight = 0;
+				if(sourceVertex.isInputVertex()) {
+					//input vertices have 1 input
+					sourceVertexInputsWeight = 1;
+				} else {
+					//non input vertices have a real number of inputs, each with its size
+					for (JobEdge sourceVertexInput : sourceVertex.getInputs()) {
+						sourceVertexInputsWeight += sourceVertexInput.getWeight();
+					}
+				}
+
+				//weight is ( sourceVertexInputsWeight * sourceVertexSelectivity ) / sourceVertexOutputs
+				double weightToSet = (sourceVertexInputsWeight * sourceVertex.getSelectivity()) / edge.getSource().getProducer().getProducedDataSets().size();
+				edge.setWeight(weightToSet);
+			}
+		}
+	}
+
+	private Map<JobVertex, GeoLocation> makePlacedVertices() {
+		Map<JobVertex, GeoLocation> placedVertices = new HashMap<>();
+		for (JobVertex jobVertex : this.getVertices()) {
+			if(jobVertex.getGeoLocationKey() != null) {
+				placedVertices.put(jobVertex, new GeoLocation(jobVertex.getGeoLocationKey()));
+			}
+		}
+		return placedVertices;
+	}
+
+
+	/**
+	 * @return the {@link OptimisationModelSolution} for this graph, or null if the model hasn't been solved
+	 * */
+	public OptimisationModelSolution getSolution() {
+		return solution;
+	}
+
+
+	/**
+	 * Sets the parameters that will be used to solve the model for this graph.
+	 * */
+	public void setOptimisationModelParameters(OptimisationModelParameters parameters) {
+		this.optimisationModelParameters = parameters;
 	}
 
 	/**

@@ -1278,6 +1278,12 @@ class JobManager(
         val allocationTimeout: Long = flinkConfiguration.getLong(
           JobManagerOptions.SLOT_REQUEST_TIMEOUT)
 
+        scheduler match {
+          case geoScheduler: FlinkGeoScheduler =>
+            jobGraph.solveOptimisationModel(geoScheduler.getBandwidthProvider, geoScheduler.calculateAvailableSlotsByGeoLocation)
+          case _ =>
+        }
+
         executionGraph = ExecutionGraphBuilder.buildGraph(
           executionGraph,
           jobGraph,
