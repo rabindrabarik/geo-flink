@@ -160,7 +160,6 @@ public class ExecutionGraphBuilder {
 
 		OptimisationModelSolution solution = jobGraph.getSolution();
 
-
 		if (solution == null && slotProvider instanceof GeoScheduler) {
 			log.error("Tried to make an execution graph with a geo scheduler, but the resulting model is unfeasible. Should go forward with standard scheduler");
 			//changing the scheduler

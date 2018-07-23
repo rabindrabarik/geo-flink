@@ -11,7 +11,6 @@ import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobmanager.scheduler.BandwidthProvider;
-import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.types.TwoKeysMap;
 import org.apache.flink.types.TwoKeysMultiMap;
@@ -40,11 +39,11 @@ public class OptimisationModel {
 
 	// Objective //
 	private GRBVar networkCost;
-	private GRBVar executionTime;
+	private GRBVar executionSpeed;
 
 	// Weights //
 	private double networkCostWeight;
-	private double executionTimeWeight;
+	private double executionSpeedWeight;
 
 	public OptimisationModel(Collection<JobVertex> vertices,
 							 Set<GeoLocation> locations,
@@ -65,7 +64,7 @@ public class OptimisationModel {
 		this.slots = slots;
 
 		this.networkCostWeight = parameters.getNetworkCostWeight();
-		this.executionTimeWeight = parameters.getExecutionSpeedWeight();
+		this.executionSpeedWeight = - parameters.getExecutionSpeedWeight();
 
 		//double the time spent on heuristics
 		model.set(GRB.DoubleParam.Heuristics, 0.1);
@@ -76,7 +75,7 @@ public class OptimisationModel {
 		addParallelismVariables();
 
 		addNetworkCostVariable();
-		addExecutionTimeVariable();
+		addExecutionSpeedVariable();
 
 		addTaskAllocationConstraint();
 		addSlotOverflowConstraint();
@@ -89,13 +88,13 @@ public class OptimisationModel {
 				if (isPlaced) {
 					//placed vertices' placement variables are static: 1 or 0
 					if (placedVertices.get(jv).equals(gl)) {
-						placement.put(jv, gl, model.addVar(1, 1, 0.0, GRB.BINARY, "placement_" + jv + "_" + gl));
+						placement.put(jv, gl, model.addVar(1, 1, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
 					} else {
-						placement.put(jv, gl, model.addVar(0, 0, 0.0, GRB.BINARY, "placement_" + jv + "_" + gl));
+						placement.put(jv, gl, model.addVar(0, 0, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
 					}
 				} else {
 					//non-placed vertices' placement variables are free
-					placement.put(jv, gl, model.addVar(0, 1, 0.0, GRB.BINARY, "placement_" + jv + "_" + gl));
+					placement.put(jv, gl, model.addVar(0, 1, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
 				}
 			}
 		}
@@ -103,7 +102,7 @@ public class OptimisationModel {
 
 	private void addParallelismVariables() throws GRBException {
 		for (JobVertex jv : vertices) {
-			parallelism.put(jv, model.addVar(1d, getMaxParallelism(jv), 0.0, GRB.INTEGER, "parallelism_" + jv));
+			parallelism.put(jv, model.addVar(1d, getMaxParallelism(jv), 0.0, GRB.INTEGER, getVariableString("placement",jv)));
 		}
 	}
 
@@ -112,9 +111,9 @@ public class OptimisationModel {
 		model.addQConstr(networkCost, GRB.EQUAL, makeNetworkCostExpression(), "network_cost");
 	}
 
-	private void addExecutionTimeVariable() throws GRBException {
-		executionTime = model.addVar(0, GRB.INFINITY, executionTimeWeight, GRB.CONTINUOUS, "execution_time");
-		model.addConstr(executionTime, GRB.EQUAL, makeExecutionTimeExpression(), "execution_time");
+	private void addExecutionSpeedVariable() throws GRBException {
+		executionSpeed = model.addVar(0, GRB.INFINITY, executionSpeedWeight, GRB.CONTINUOUS, "execution_speed");
+		model.addConstr(executionSpeed, GRB.EQUAL, makeExecutionSpeedExpression(), "execution_speed");
 	}
 
 	/**
@@ -124,7 +123,7 @@ public class OptimisationModel {
 	 */
 	private void addTaskAllocationConstraint() throws  GRBException {
 		for (JobVertex vertex : vertices) {
-			String name = "sum_allocated_partitions_" + vertex;
+			String name = getVariableString("sum_allocated_partitions_", vertex);
 			GRBLinExpr lhs = new GRBLinExpr();
 			for (GeoLocation location : locations) {
 				lhs.addTerm(1d, placement.get(vertex, location));
@@ -139,13 +138,27 @@ public class OptimisationModel {
 	 */
 	private void addSlotOverflowConstraint () throws GRBException {
 		for (GeoLocation location : locations) {
-			String name = "allocated_subtasks_" + location;
+			String name = getVariableString("allocated_subtasks_", location);
 			GRBQuadExpr lhs = new GRBQuadExpr();
 			for (JobVertex vertex : vertices) {
 				lhs.addTerm(1d, placement.get(vertex, location), parallelism.get(vertex));
 			}
 			model.addQConstr(lhs, GRB.LESS_EQUAL, slots.get(location), name);
 		}
+	}
+
+	private String getVariableString(String variableName, Object... params) {
+		StringBuilder out = new StringBuilder(variableName);
+		for (Object param : params) {
+			out.append("_");
+			if (param.toString().length() >= 100) {
+				out.append(param.toString(), 0, 100);
+			} else {
+				out.append(param.toString());
+			}
+
+		}
+		return out.toString();
 	}
 
 	/**
@@ -187,7 +200,7 @@ public class OptimisationModel {
 		return expr;
 	}
 
-	private GRBLinExpr makeExecutionTimeExpression() {
+	private GRBLinExpr makeExecutionSpeedExpression() {
 		GRBLinExpr expr = new GRBLinExpr();
 		for (JobVertex vertex : vertices) {
 			expr.addTerm(vertex.getWeight(), parallelism.get(vertex));
@@ -197,12 +210,12 @@ public class OptimisationModel {
 
 	public OptimisationModelSolution optimize() throws GRBException {
 		model.optimize();
-		return OptimisationModelSolution.fromSolvedModel(model, placement, parallelism, executionTime, networkCost);
+		return OptimisationModelSolution.fromSolvedModel(model, placement, parallelism, executionSpeed, networkCost);
 	}
 
 	public String solutionString() {
 		try {
-			if (isSolved()) {
+			if (!isSolved()) {
 				return "Solve the model first";
 			}
 		} catch (GRBException e) {
@@ -218,14 +231,14 @@ public class OptimisationModel {
 			out += "\nproblem[tasks][sites] =\n\n";
 			out += GRBUtils.twoKeysMapToString(model, placement);
 
-			out += "\n------ EXECUTION TIME ------ \n";
-			out += executionTime.get(GRB.DoubleAttr.X);
+			out += "\n------ EXECUTION SPEED ------ \n";
+			out += executionSpeed.get(GRB.DoubleAttr.X);
 
 			out += "\n\n------ NETWORK COST ------ \n";
 			out += networkCost.get(GRB.DoubleAttr.X);
 
 			out += "\n\n------ OBJECTIVE ------ \n";
-			out += executionTime.get(GRB.DoubleAttr.X) + " * " + executionTimeWeight + " + " + networkCost.get(GRB.DoubleAttr.X) + " * " + networkCostWeight + " = " + model.get(GRB.DoubleAttr.ObjVal);
+			out += executionSpeed.get(GRB.DoubleAttr.X) + " * " + executionSpeedWeight + " + " + networkCost.get(GRB.DoubleAttr.X) + " * " + networkCostWeight + " = " + model.get(GRB.DoubleAttr.ObjVal);
 
 			out += "\n\n------ MODEL RUNTIME ------ \n";
 			out += model.get(GRB.DoubleAttr.Runtime) + " s";

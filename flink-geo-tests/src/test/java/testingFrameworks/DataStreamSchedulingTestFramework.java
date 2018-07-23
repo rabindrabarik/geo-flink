@@ -90,6 +90,15 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 		this.numberTaskManagers = getGeoLocationSlotMap().isEmpty() ? 1 : getGeoLocationSlotMap().size();
 	}
 
+
+	protected String instanceSetNameFromGeoLocationSlotMap(Map<String,Integer> geoLocationSlotMap) {
+		StringBuilder out = new StringBuilder();
+		for (Map.Entry<String, Integer> locationAndSlots : geoLocationSlotMap.entrySet()) {
+			out.append(locationAndSlots.getKey()).append("_").append(locationAndSlots.getValue()).append("_");
+		}
+		return out.toString();
+	}
+
 	private int getSlotAverage(Map<String, Integer> geoLocationSlotMap) {
 		int sum = 0;
 

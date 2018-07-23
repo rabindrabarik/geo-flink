@@ -51,19 +51,19 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 	@Override
 	public TwoKeysMap<GeoLocation, GeoLocation, Double> getBandwidths() {
 		TwoKeysMap <GeoLocation, GeoLocation, Double> bandwidths = new TwoKeysMultiMap<>();
-		bandwidths.put(center, edge1, 1d);
-		bandwidths.put(center, edge2, 1d);
-		bandwidths.put(center, edge3, 1d);
+		bandwidths.put(center, edge1, 2d);
+		bandwidths.put(center, edge2, 2d);
+		bandwidths.put(center, edge3, 2d);
 
-		bandwidths.put(edge1, center, 1d);
+		bandwidths.put(edge1, center, 2d);
 		bandwidths.put(edge1, edge2, 1d);
 		bandwidths.put(edge1, edge3, 1d);
 
-		bandwidths.put(edge2, center, 1d);
+		bandwidths.put(edge2, center, 2d);
 		bandwidths.put(edge2, edge1, 1d);
 		bandwidths.put(edge2, edge3, 1d);
 
-		bandwidths.put(edge3, center, 1d);
+		bandwidths.put(edge3, center, 2d);
 		bandwidths.put(edge3, edge2, 1d);
 		bandwidths.put(edge3, edge1, 1d);
 
@@ -73,7 +73,7 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 	@Before
 	public void setup() {
 		jobName = "windowJoin";
-		instanceSetName = "1_center_20_slots_3_edge_4_slot";
+		instanceSetName = instanceSetNameFromGeoLocationSlotMap(getGeoLocationSlotMap());
 	}
 
 	@Test
@@ -110,8 +110,8 @@ public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFram
 				.writeAsText(resultPath, FileSystem.WriteMode.OVERWRITE)
 				.setGeoLocationKey("edge3");
 
-			env.getModelParameters().setExecutionSpeedWeight(0.8);
-			env.getModelParameters().setNetworkCostWeight(0.2);
+			env.getModelParameters().setExecutionSpeedWeight(0.5);
+			env.getModelParameters().setNetworkCostWeight(0.5);
 
 			env.execute();
 
