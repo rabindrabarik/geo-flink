@@ -16,81 +16,47 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.util.TestStreamEnvironment;
 import org.apache.flink.test.util.MiniClusterResource;
-import org.apache.flink.types.TwoKeysMap;
-import org.apache.flink.types.TwoKeysMultiMap;
 import org.apache.flink.util.Collector;
 import org.junit.Before;
 import org.junit.Test;
 import spies.SpyableScheduler;
 import testingFrameworks.DataStreamSchedulingTestFramework;
+import writableTypes.CentralAndEdgeGeoLocationAndBandwidths;
+import writableTypes.TestGeoLocationAndBandwidths;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class DAGDataStreamSchedulingTest extends DataStreamSchedulingTestFramework {
 
-	private Map<String, Integer> geoLocationSlotMap;
+	private static TestGeoLocationAndBandwidths geoLocationAndBandwidths = new CentralAndEdgeGeoLocationAndBandwidths(
+		7,
+		5,
+		10,
+		1d,
+		10d);
 
 	public DAGDataStreamSchedulingTest(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
 		super(scheduler, miniClusterType);
 	}
 
-	public static GeoLocation center = new GeoLocation("center");
-	public static GeoLocation edge1 = new GeoLocation("edge1");
-	public static GeoLocation edge2 = new GeoLocation("edge2");
-	public static GeoLocation edge3 = new GeoLocation("edge3");
 
 	@Override
-	public Map<String, Integer> getGeoLocationSlotMap() {
-		if(geoLocationSlotMap != null) {
-			return geoLocationSlotMap;
-		} else {
-			geoLocationSlotMap = new HashMap<>();
-			geoLocationSlotMap.put("center", 10);
-			geoLocationSlotMap.put("edge1", 4);
-			geoLocationSlotMap.put("edge2", 4);
-			geoLocationSlotMap.put("edge3", 4);
-		}
-		return geoLocationSlotMap;
+	public TestGeoLocationAndBandwidths getTestGeoLocationAndBandwidths() {
+		return geoLocationAndBandwidths;
 	}
-
-	@Override
-	public TwoKeysMap<GeoLocation, GeoLocation, Double> getBandwidths() {
-		TwoKeysMap <GeoLocation, GeoLocation, Double> bandwidths = new TwoKeysMultiMap<>();
-		bandwidths.put(center, edge1, 2d);
-		bandwidths.put(center, edge2, 2d);
-		bandwidths.put(center, edge3, 2d);
-
-		bandwidths.put(edge1, center, 2d);
-		bandwidths.put(edge1, edge2, 1d);
-		bandwidths.put(edge1, edge3, 1d);
-
-		bandwidths.put(edge2, center, 2d);
-		bandwidths.put(edge2, edge1, 1d);
-		bandwidths.put(edge2, edge3, 1d);
-
-		bandwidths.put(edge3, center, 2d);
-		bandwidths.put(edge3, edge2, 1d);
-		bandwidths.put(edge3, edge1, 1d);
-
-		return bandwidths;
-	}
-
 	@Before
 	public void setup() {
 		jobName = "windowJoin";
-		instanceSetName = instanceSetNameFromGeoLocationSlotMap(getGeoLocationSlotMap());
 	}
 
 	private Collection<Tuple2<String, Integer>> makeInputCollection() {
 		Random r = new Random();
 		Collection<Tuple2<String, Integer>> vals = new ArrayList<>();
-		for(int i = 0; i < 50; i ++) {
+		for(int i = 0; i < 2; i ++) {
 			vals.add(new Tuple2<>(JobID.generate().toString(), r.nextInt(10)));
 		}
 		return vals;

@@ -24,6 +24,7 @@ import spies.SpyableGeoScheduler;
 import spies.SpyableScheduler;
 import testOutputWriter.TestOutputImpl;
 import testOutputWriter.TestOutputWriter;
+import writableTypes.TestGeoLocationAndBandwidths;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,12 +52,12 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 		});
 	}
 
-	public static Configuration makeLocationSlotConfiguration(Map<String, Integer> geoLocationSlotMap) {
+	public static Configuration makeLocationSlotConfiguration(Map<GeoLocation, Integer> geoLocationSlotMap) {
 		Configuration configuration = new Configuration();
 		int taskManagerIndex = 0;
-		for (Map.Entry<String, Integer> locationAndSlots : geoLocationSlotMap.entrySet()) {
+		for (Map.Entry<GeoLocation, Integer> locationAndSlots : geoLocationSlotMap.entrySet()) {
 			configuration.setInteger(GeoSchedulerTestingUtilsOptions.slotsForTaskManagerAtIndex(taskManagerIndex), locationAndSlots.getValue());
-			configuration.setString(GeoSchedulerTestingUtilsOptions.geoLocationForTaskManagerAtIndex(taskManagerIndex), locationAndSlots.getKey());
+			configuration.setString(GeoSchedulerTestingUtilsOptions.geoLocationForTaskManagerAtIndex(taskManagerIndex), locationAndSlots.getKey().getKey());
 			taskManagerIndex++;
 		}
 		return configuration;
@@ -70,36 +71,23 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 
 	public int numberSlotsPerTaskManager;
 
-	public SchedulerInjectingMiniClusterResource miniClusterResource;
-
 	public String jobName;
-
-	public String instanceSetName;
 
 	public DataStreamSchedulingTestFramework(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
 		this.scheduler = scheduler;
 
 		 if(scheduler instanceof  SpyableGeoScheduler) {
-			 ((SpyableGeoScheduler) scheduler).setBandwidthProvider(new StaticBandwidthProvider(getBandwidths()));
+			 ((SpyableGeoScheduler) scheduler).setBandwidthProvider(new StaticBandwidthProvider(getTestGeoLocationAndBandwidths().getBandwidths()));
 		 } else if (scheduler instanceof  SpyableFlinkScheduler) {
-			 ((SpyableFlinkScheduler) scheduler).setBandwidthProvider(new StaticBandwidthProvider(getBandwidths()));
+			 ((SpyableFlinkScheduler) scheduler).setBandwidthProvider(new StaticBandwidthProvider(getTestGeoLocationAndBandwidths().getBandwidths()));
 		 }
 
 		this.miniClusterType = miniClusterType;
-		this.numberSlotsPerTaskManager = getSlotAverage(getGeoLocationSlotMap());
-		this.numberTaskManagers = getGeoLocationSlotMap().isEmpty() ? 1 : getGeoLocationSlotMap().size();
+		this.numberSlotsPerTaskManager = getSlotAverage(getTestGeoLocationAndBandwidths().getGeoLocationSlotMap());
+		this.numberTaskManagers = getTestGeoLocationAndBandwidths().getGeoLocationSlotMap().isEmpty() ? 1 : getTestGeoLocationAndBandwidths().getGeoLocationSlotMap().size();
 	}
 
-
-	protected String instanceSetNameFromGeoLocationSlotMap(Map<String,Integer> geoLocationSlotMap) {
-		StringBuilder out = new StringBuilder();
-		for (Map.Entry<String, Integer> locationAndSlots : geoLocationSlotMap.entrySet()) {
-			out.append(locationAndSlots.getKey()).append("_").append(locationAndSlots.getValue()).append("_");
-		}
-		return out.toString();
-	}
-
-	private int getSlotAverage(Map<String, Integer> geoLocationSlotMap) {
+	private int getSlotAverage(Map<GeoLocation, Integer> geoLocationSlotMap) {
 		int sum = 0;
 
 		if(geoLocationSlotMap.isEmpty()) {
@@ -116,18 +104,13 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 	 * @return a map from a geo location name to the number of slots to provide in that location. For performance reasons,
 	 * make this a getter of a cached field, instead of recalculating it.
 	 */
-	public abstract Map<String, Integer> getGeoLocationSlotMap();
+	public abstract TestGeoLocationAndBandwidths getTestGeoLocationAndBandwidths();
 
-
-	/**
-	 * @return a map from two geolocations to the bandwidth from the first to the second.
-	 * */
-	public abstract TwoKeysMap<GeoLocation, GeoLocation, Double> getBandwidths();
 
 	@Rule
 	public SchedulerInjectingMiniClusterResource makeMiniClusterResource() {
 		return new SchedulerInjectingMiniClusterResource(
-			new MiniClusterResource.MiniClusterResourceConfiguration(makeLocationSlotConfiguration(getGeoLocationSlotMap()), numberTaskManagers, numberSlotsPerTaskManager),
+			new MiniClusterResource.MiniClusterResourceConfiguration(makeLocationSlotConfiguration(getTestGeoLocationAndBandwidths().getGeoLocationSlotMap()), numberTaskManagers, numberSlotsPerTaskManager),
 			scheduler,
 			miniClusterType);
 	}
@@ -150,6 +133,6 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 
 		ExecutionGraph executionGraph = spy.getGraphs().iterator().next();
 
-		SchedulingTestFrameworkUtils.writeTestOutcome(executionGraph, spy, (Scheduler) scheduler, writer, jobName, instanceSetName);
+		SchedulingTestFrameworkUtils.writeTestOutcome(executionGraph, spy, (Scheduler) scheduler, writer, jobName, getTestGeoLocationAndBandwidths().getClassNameString());
 	}
 }

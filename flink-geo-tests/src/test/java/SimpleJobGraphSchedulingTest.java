@@ -6,8 +6,8 @@ import writableTypes.TestJobGraph;
 
 public class SimpleJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
 
-	private final SimpleJobGraph simpleJobGraph = new SimpleJobGraph(4);
-	private final DistributedInstances instanceSet = new DistributedInstances(4);
+	private final SimpleJobGraph simpleJobGraph = new SimpleJobGraph(10);
+	private final DistributedInstances instanceSet = new DistributedInstances(10);
 
 	@Override
 	protected TestJobGraph jobGraph() {

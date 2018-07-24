@@ -4,7 +4,6 @@ public abstract class WritableType {
 
 	protected Object[] params;
 
-
 	public String getClassNameString() {
 		StringBuilder out = new StringBuilder(this.getClass().getSimpleName());
 

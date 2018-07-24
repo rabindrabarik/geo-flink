@@ -14,6 +14,8 @@ import org.junit.Before;
 import org.junit.Test;
 import spies.SpyableScheduler;
 import testingFrameworks.DataStreamSchedulingTestFramework;
+import writableTypes.CentralAndEdgeGeoLocationAndBandwidths;
+import writableTypes.TestGeoLocationAndBandwidths;
 
 import java.io.File;
 import java.util.HashMap;
@@ -23,57 +25,25 @@ import static org.apache.flink.test.util.TestBaseUtils.checkLinesAgainstRegexp;
 
 public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFramework {
 
-	private Map<String, Integer> geoLocationSlotMap;
+	private TestGeoLocationAndBandwidths geoLocationAndBandwidths = new CentralAndEdgeGeoLocationAndBandwidths(
+		3,
+		4,
+		10,
+		2d,
+		1d);
 
 	public SimpleDataStreamSchedulingTest(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
 		super(scheduler, miniClusterType);
 	}
 
-	public static GeoLocation center = new GeoLocation("center");
-	public static GeoLocation edge1 = new GeoLocation("edge1");
-	public static GeoLocation edge2 = new GeoLocation("edge2");
-	public static GeoLocation edge3 = new GeoLocation("edge3");
-
 	@Override
-	public Map<String, Integer> getGeoLocationSlotMap() {
-		if(geoLocationSlotMap != null) {
-			return geoLocationSlotMap;
-		} else {
-			geoLocationSlotMap = new HashMap<>();
-			geoLocationSlotMap.put("center", 10);
-			geoLocationSlotMap.put("edge1", 4);
-			geoLocationSlotMap.put("edge2", 4);
-			geoLocationSlotMap.put("edge3", 4);
-		}
-		return geoLocationSlotMap;
-	}
-
-	@Override
-	public TwoKeysMap<GeoLocation, GeoLocation, Double> getBandwidths() {
-		TwoKeysMap <GeoLocation, GeoLocation, Double> bandwidths = new TwoKeysMultiMap<>();
-		bandwidths.put(center, edge1, 2d);
-		bandwidths.put(center, edge2, 2d);
-		bandwidths.put(center, edge3, 2d);
-
-		bandwidths.put(edge1, center, 2d);
-		bandwidths.put(edge1, edge2, 1d);
-		bandwidths.put(edge1, edge3, 1d);
-
-		bandwidths.put(edge2, center, 2d);
-		bandwidths.put(edge2, edge1, 1d);
-		bandwidths.put(edge2, edge3, 1d);
-
-		bandwidths.put(edge3, center, 2d);
-		bandwidths.put(edge3, edge2, 1d);
-		bandwidths.put(edge3, edge1, 1d);
-
-		return bandwidths;
+	public TestGeoLocationAndBandwidths getTestGeoLocationAndBandwidths() {
+		return geoLocationAndBandwidths;
 	}
 
 	@Before
 	public void setup() {
 		jobName = "windowJoin";
-		instanceSetName = instanceSetNameFromGeoLocationSlotMap(getGeoLocationSlotMap());
 	}
 
 	@Test

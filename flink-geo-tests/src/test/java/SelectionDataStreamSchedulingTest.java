@@ -16,6 +16,8 @@ import org.junit.Before;
 import org.junit.Test;
 import spies.SpyableScheduler;
 import testingFrameworks.DataStreamSchedulingTestFramework;
+import writableTypes.CentralAndEdgeGeoLocationAndBandwidths;
+import writableTypes.TestGeoLocationAndBandwidths;
 
 import java.io.File;
 import java.util.Collections;
@@ -25,34 +27,25 @@ import java.util.Random;
 
 public class SelectionDataStreamSchedulingTest extends DataStreamSchedulingTestFramework {
 
-	private Map<String, Integer> geoLocationSlotMap;
+	private TestGeoLocationAndBandwidths geoLocationAndBandwidths = new CentralAndEdgeGeoLocationAndBandwidths(
+		5,
+		4,
+		10,
+		2d,
+		1d);
 
 	public SelectionDataStreamSchedulingTest(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
 		super(scheduler, miniClusterType);
 	}
 
 	@Override
-	public Map<String, Integer> getGeoLocationSlotMap() {
-		if (geoLocationSlotMap != null) {
-			return geoLocationSlotMap;
-		} else {
-			geoLocationSlotMap = new HashMap<>();
-			geoLocationSlotMap.put("center", 10);
-			geoLocationSlotMap.put("edge1", 4);
-			geoLocationSlotMap.put("edge2", 4);
-		}
-		return geoLocationSlotMap;
-	}
-
-	@Override
-	public TwoKeysMap<GeoLocation, GeoLocation, Double> getBandwidths() {
-		return new TwoKeysMultiMap<>();
+	public TestGeoLocationAndBandwidths getTestGeoLocationAndBandwidths() {
+		return geoLocationAndBandwidths;
 	}
 
 	@Before
 	public void setup() {
 		jobName = "windowJoin";
-		instanceSetName = "1_center_20_slots_2_edge_1_slot";
 	}
 
 	@Test
@@ -77,13 +70,7 @@ public class SelectionDataStreamSchedulingTest extends DataStreamSchedulingTestF
 			DataStream<Tuple2<String, Integer>> grades = env
 				.fromElements(WindowJoinData.GRADES_INPUT.split("\n"))
 				.setSourceSize(2)
-				.map(new Parser(), 0.1)
-				.map(new MapFunction<Tuple2<String, Integer>, Tuple2<String, Integer>>() {
-					@Override
-					public Tuple2<String, Integer> map(Tuple2<String, Integer> value) throws Exception {
-						return value;
-					}
-				});
+				.map(new Parser(), 0.1);
 
 			SplitStream<Tuple2<String, Integer>> splitted = grades.split(new SelectivityAwareOutputSelector<Tuple2<String, Integer>>() {
 				private Random random = new Random();
