@@ -5,8 +5,11 @@ import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.ScheduleMode;
+import org.apache.flink.runtime.jobmanager.scheduler.GeoScheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
+import org.apache.flink.runtime.jobmanager.scheduler.StaticBandwidthProvider;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
+import org.apache.flink.types.TwoKeysMultiMap;
 import org.apache.flink.util.TestLogger;
 import org.junit.After;
 import org.junit.Before;
@@ -89,6 +92,10 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 
 	@Test
 	public void test() throws Exception {
+		if(scheduler instanceof GeoScheduler) {
+			jobGraph().getJobGraph().solveOptimisationModel(new StaticBandwidthProvider(new TwoKeysMultiMap<>()), ((GeoScheduler) scheduler).calculateAvailableSlotsByGeoLocation());
+		}
+
 		executionGraph = makeExecutionGraph(
 			jobGraph().getJobGraph().getVerticesSortedTopologicallyFromSources().toArray(new JobVertex[0]),
 			log,

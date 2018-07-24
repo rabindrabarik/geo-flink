@@ -29,7 +29,7 @@ public class OptimisationModelSolution {
 
 	public static OptimisationModelSolution fromSolvedModel(GRBModel solvedModel, TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap, Map<JobVertex, GRBVar> parallelismVarMap, GRBVar executionTime, GRBVar networkCost) throws GRBException {
 		if (!GRBUtils.isSolved(solvedModel)) {
-			throw new IllegalArgumentException("Solve the model first");
+			return null;
 		}
 
 		Map<JobVertex, GeoLocation> placement = makePlacementMap(placementVarMap);

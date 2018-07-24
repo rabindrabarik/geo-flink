@@ -118,8 +118,7 @@ public class JobVertex implements java.io.Serializable {
 	private String resultOptimizerProperties;
 
 	/**
-	 * The amount of data this vertex will output, relative to the sum of its inputs. It's automatically
-	 * derived from the invokable class.
+	 * The amount of data this vertex will output, relative to the sum of its inputs.
 	 * */
 	private double selectivity;
 
