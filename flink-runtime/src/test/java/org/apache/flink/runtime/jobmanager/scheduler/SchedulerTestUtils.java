@@ -44,9 +44,8 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
-import org.apache.flink.types.TwoKeysMap;
-import org.apache.flink.types.TwoKeysMultiMap;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.net.InetAddress;
@@ -55,7 +54,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -240,10 +238,10 @@ public class SchedulerTestUtils {
 	/**
 	 * Make an ExecutionGraph using many default dummy values and a {@link Scheduler}.
 	 * */
-	public static ExecutionGraph makeExecutionGraph(JobVertex[] vertices, Logger log) throws JobExecutionException, JobException {
+	public static ExecutionGraph makeExecutionGraph(JobGraph graph) throws JobExecutionException, JobException {
 		return ExecutionGraphBuilder.buildGraph(
 			null,
-			new JobGraph(vertices),
+			graph,
 			new Configuration(),
 			TestingUtils.queuedActionExecutionContext(),
 			TestingUtils.queuedActionExecutionContext(),
@@ -255,26 +253,17 @@ public class SchedulerTestUtils {
 			new UnregisteredMetricsGroup(),
 			new VoidBlobWriter(),
 			Time.seconds(1L),
-			log);
+			LoggerFactory.getLogger(SchedulerTestUtils.class));
 	}
 
 	/**
 	 * Make an ExecutionGraph using many default dummy values and the provided {@link Scheduler}. Note that providing a {@link GeoScheduler}
 	 * will trigger a {@link OptimisationModel} solving. In this case, placed vertices can also be provided.
 	 * */
-	public static ExecutionGraph makeExecutionGraph(JobVertex[] vertices, Logger log, Scheduler scheduler, @Nullable  Map<JobVertex, GeoLocation> placedVertices) throws JobException, JobExecutionException {
-		if(placedVertices != null) {
-			for (JobVertex vertex : vertices) {
-				if (placedVertices.containsKey(vertex)) {
-					vertex.setGeoLocationKey(placedVertices.get(vertex).getKey());
-				}
-			}
-		}
-
-
+	public static ExecutionGraph makeExecutionGraph(JobGraph graph, Scheduler scheduler, @Nullable  Map<JobVertex, GeoLocation> placedVertices) throws JobException, JobExecutionException {
 		return ExecutionGraphBuilder.buildGraph(
 			null,
-			new JobGraph(vertices),
+			graph,
 			new Configuration(),
 			TestingUtils.queuedActionExecutionContext(),
 			TestingUtils.queuedActionExecutionContext(),
@@ -286,7 +275,7 @@ public class SchedulerTestUtils {
 			new UnregisteredMetricsGroup(),
 			new VoidBlobWriter(),
 			Time.seconds(1L),
-			log);
+			LoggerFactory.getLogger(SchedulerTestUtils.class));
 	}
 
 }

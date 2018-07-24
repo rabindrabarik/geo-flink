@@ -21,14 +21,14 @@ public class CentralAndEdgeGeoLocationAndBandwidths extends TestGeoLocationAndBa
 		params[3] = centralEdgeBandwidth;
 		params[4] = edgeEdgeBandwidth;
 
-		GeoLocation centralCloud = new GeoLocation("central-cloud");
+		GeoLocation centralCloud = new GeoLocation("central");
 
 		geoLocationSlotMap.put(centralCloud, centralCloudSlots);
 
 		Set<GeoLocation> edgeClouds = new HashSet<>();
 
 		for(int i = 0; i < numberOfEdgeClouds; i ++) {
-			GeoLocation edge = new GeoLocation("edge-cloud-" + i);
+			GeoLocation edge = new GeoLocation("edge" + i);
 			edgeClouds.add(edge);
 			geoLocationSlotMap.put(edge, edgeCloudsSlots);
 			bandwidths.put(edge, centralCloud, centralEdgeBandwidth);

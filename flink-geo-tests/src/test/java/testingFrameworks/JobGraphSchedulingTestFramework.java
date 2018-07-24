@@ -97,8 +97,7 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 		}
 
 		executionGraph = makeExecutionGraph(
-			jobGraph().getJobGraph().getVerticesSortedTopologicallyFromSources().toArray(new JobVertex[0]),
-			log,
+			jobGraph().getJobGraph(),
 			scheduler,
 			placedVertices());
 

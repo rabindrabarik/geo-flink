@@ -7,7 +7,6 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
-import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
@@ -33,9 +32,9 @@ import java.util.concurrent.TimeUnit;
 public class DAGDataStreamSchedulingTest extends DataStreamSchedulingTestFramework {
 
 	private static TestGeoLocationAndBandwidths geoLocationAndBandwidths = new CentralAndEdgeGeoLocationAndBandwidths(
-		7,
-		5,
-		10,
+		6,
+		1,
+		1,
 		1d,
 		10d);
 

@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class NetworkSpeedTradeoffJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
 	private final SimpleJobGraph jobGraph = new SimpleJobGraph(4);
-	private final CentralAndEdgeInstances instances = new CentralAndEdgeInstances(4, 20, 2);
+	private final CentralAndEdgeInstances instances = new CentralAndEdgeInstances(4, 10, 20);
 	private final Map<JobVertex, GeoLocation> placedVertices = new HashMap<>();
 
 	public NetworkSpeedTradeoffJobGraphSchedulingTest() {
@@ -27,7 +27,9 @@ public class NetworkSpeedTradeoffJobGraphSchedulingTest extends JobGraphScheduli
 		for (int i = inputs.size() - 1; i >= 0; i--) {
 			JobVertex input = inputs.get(i);
 			if (geoLocationIterator.hasNext()) {
-				placedVertices.put(input, geoLocationIterator.next());
+				GeoLocation location = geoLocationIterator.next();
+				input.setGeoLocationKey(location.getKey());
+				placedVertices.put(input, location);
 			}
 		}
 	}

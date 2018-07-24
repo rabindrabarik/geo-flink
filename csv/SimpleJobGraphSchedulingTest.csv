@@ -1,0 +1,9 @@
+networkCost,executionSpeed,schedulerClassName,jobGraphCalssName,instanceSetClassName,modelSolveTime [ms]
+-1.0,21.0,SpyableGeoScheduler,SimpleJobGraph(10),DistributedInstances(10),0
+0.0,21.0,SpyableFlinkScheduler,SimpleJobGraph(10),DistributedInstances(10),0
+-1.0,21.0,SpyableGeoScheduler,SimpleJobGraph(10),DistributedInstances(10),0
+0.0,21.0,SpyableFlinkScheduler,SimpleJobGraph(10),DistributedInstances(10),0
+-1.0,21.0,SpyableGeoScheduler,SimpleJobGraph(10),DistributedInstances(10),0
+0.0,21.0,SpyableFlinkScheduler,SimpleJobGraph(10),DistributedInstances(10),0
+-1.0,40.0,SpyableGeoScheduler,SimpleJobGraph(10),DistributedInstances(10),0
+0.0,21.0,SpyableFlinkScheduler,SimpleJobGraph(10),DistributedInstances(10),0

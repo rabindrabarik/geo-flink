@@ -1,0 +1,19 @@
+networkCost,executionSpeed,schedulerClassName,jobGraphCalssName,instanceSetClassName,modelSolveTime [ms]
+-1.0,26.0,SpyableGeoScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,4)",0
+0.0,9.0,SpyableFlinkScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,4)",0
+-1.0,26.0,SpyableGeoScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,4)",0
+0.0,9.0,SpyableFlinkScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,4)",0
+-1.0,26.0,SpyableGeoScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,4)",0
+0.0,9.0,SpyableFlinkScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,4)",0
+-1.0,9.0,SpyableGeoScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,1,2)",0
+1.0,9.0,SpyableFlinkScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,1,2)",0
+-1.0,36.0,SpyableGeoScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",0
+0.0,9.0,SpyableFlinkScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",0
+-1.0,36.0,SpyableGeoScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",0
+0.0,9.0,SpyableFlinkScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",0
+0.0,36.0,SpyableGeoScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",36000
+0.0,9.0,SpyableFlinkScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",0
+0.0,36.0,SpyableGeoScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",36000
+0.0,9.0,SpyableFlinkScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",0
+0.0,36.0,SpyableGeoScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",36000
+0.0,9.0,SpyableFlinkScheduler,SimpleJobGraph(4),"CentralAndEdgeInstances(4,10,20)",0
