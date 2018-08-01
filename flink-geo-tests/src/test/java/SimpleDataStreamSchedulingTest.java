@@ -1,15 +1,12 @@
+import data.WindowJoinData;
 import org.apache.commons.io.FileUtils;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.FileSystem;
-import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.test.examples.join.WindowJoinData;
 import org.apache.flink.streaming.util.TestStreamEnvironment;
 import org.apache.flink.test.util.MiniClusterResource;
-import org.apache.flink.types.TwoKeysMap;
-import org.apache.flink.types.TwoKeysMultiMap;
 import org.junit.Before;
 import org.junit.Test;
 import spies.SpyableScheduler;
@@ -18,8 +15,6 @@ import writableTypes.CentralAndEdgeGeoLocationAndBandwidths;
 import writableTypes.TestGeoLocationAndBandwidths;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.apache.flink.test.util.TestBaseUtils.checkLinesAgainstRegexp;
 

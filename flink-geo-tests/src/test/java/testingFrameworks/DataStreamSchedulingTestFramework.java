@@ -122,13 +122,13 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 	@After
 	public void teardown() {
 		if(scheduler.getSpies().size() != 1) {
-			throw new RuntimeException("Shouldn't have more than 1 spy");
+			throw new RuntimeException("Should have 1 spy");
 		}
 
 		SchedulingDecisionSpy spy = scheduler.getSpies().iterator().next();
 
 		if(spy.getGraphs().size() != 1) {
-			throw new RuntimeException("Shouldn't have more than 1 graph");
+			throw new RuntimeException("Should have 1 graph");
 		}
 
 		ExecutionGraph executionGraph = spy.getGraphs().iterator().next();

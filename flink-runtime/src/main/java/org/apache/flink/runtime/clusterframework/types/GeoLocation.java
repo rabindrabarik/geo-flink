@@ -1,6 +1,11 @@
 package org.apache.flink.runtime.clusterframework.types;
 
-public class GeoLocation {
+import java.io.Serializable;
+
+public class GeoLocation implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
 	public static GeoLocation UNKNOWN = new GeoLocation("UNKNOWN");
 
 	private String key;

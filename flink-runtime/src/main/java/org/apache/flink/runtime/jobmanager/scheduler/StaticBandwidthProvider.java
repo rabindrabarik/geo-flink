@@ -1,9 +1,15 @@
 package org.apache.flink.runtime.jobmanager.scheduler;
 
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.types.TwoKeysMap;
+import org.apache.flink.types.TwoKeysMultiMap;
 
 public class StaticBandwidthProvider implements BandwidthProvider {
+
+	public static StaticBandwidthProvider fromFile() {
+		return new StaticBandwidthProvider(new TwoKeysMultiMap<>());
+	}
 
 	private final TwoKeysMap<GeoLocation, GeoLocation, Double> bandwidths;
 

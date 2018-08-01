@@ -51,7 +51,7 @@ public class OptimisationModelSolution {
 	private static Map<JobVertex, Integer> makeParallelismMap(Map<JobVertex, GRBVar> parallelismVarMap) throws GRBException {
 		Map<JobVertex, Integer> parallelism = new HashMap<>();
 		for (Map.Entry<JobVertex, GRBVar> parallelismVarEntry : parallelismVarMap.entrySet()) {
-			parallelism.put(parallelismVarEntry.getKey(), (int) parallelismVarEntry.getValue().get(GRB.DoubleAttr.X));
+			parallelism.put(parallelismVarEntry.getKey(), (int) Math.round(parallelismVarEntry.getValue().get(GRB.DoubleAttr.X)));
 		}
 		return parallelism;
 	}

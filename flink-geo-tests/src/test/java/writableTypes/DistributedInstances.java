@@ -12,10 +12,15 @@ public class DistributedInstances extends TestInstanceSet {
 	private Set<Instance> instanceSet = new HashSet<>();
 
 	public DistributedInstances(int howMany) {
-		params = new Object[1];
+		this(howMany, 4);
+	}
+
+	public DistributedInstances(int howMany, int numSlots) {
+		params = new Object[2];
 		params[0] = howMany;
+		params[1] = numSlots;
 		for(int i = 0; i < howMany; i ++) {
-			instanceSet.add(SchedulerTestUtils.getRandomInstance(4, AckingDummyActorGateway.INSTANCE, new GeoLocation("location_" + i)));
+			instanceSet.add(SchedulerTestUtils.getRandomInstance(numSlots, AckingDummyActorGateway.INSTANCE, new GeoLocation("location_" + i)));
 		}
 	}
 

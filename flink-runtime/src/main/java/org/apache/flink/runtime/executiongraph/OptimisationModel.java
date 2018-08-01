@@ -11,6 +11,7 @@ import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.jobgraph.JobEdge;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobmanager.scheduler.BandwidthProvider;
+import org.apache.flink.runtime.jobmanager.scheduler.StaticBandwidthProvider;
 import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.types.TwoKeysMap;
 import org.apache.flink.types.TwoKeysMultiMap;
@@ -57,7 +58,12 @@ public class OptimisationModel {
 
 		this.vertices = Preconditions.checkNotNull(vertices);
 		this.locations = Preconditions.checkNotNull(locations);
-		this.bandwidthProvider = Preconditions.checkNotNull(bandwidthProvider);
+
+		if(bandwidthProvider != null) {
+			this.bandwidthProvider = bandwidthProvider;
+		} else {
+			this.bandwidthProvider = new StaticBandwidthProvider(new TwoKeysMultiMap<>());
+		}
 
 		this.placedVertices = Preconditions.checkNotNull(placedVertices);
 

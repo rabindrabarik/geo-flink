@@ -1610,8 +1610,6 @@ object TaskManager {
         null
     }
 
-    configuration.setString(TaskManagerOptions.GEO_LOCATION, "UNKNOWN")
-
     // In Standalone mode, we generate a resource identifier.
     val resourceId = ResourceID.generate()
 
@@ -2031,7 +2029,9 @@ object TaskManager {
 
     val taskManagerConfiguration = TaskManagerConfiguration.fromConfiguration(configuration)
 
-    val geoLocation = new GeoLocation(configuration.getString("geo-location", "UNKNOWN"))
+    val geoLocation = new GeoLocation(configuration.getString(TaskManagerOptions.GEO_LOCATION, "UNKNOWN"))
+
+    LOG.debug("starting TM with geo location " + geoLocation)
 
     val taskManagerServices = TaskManagerServices.fromConfigurationAndGeoLocation(
       taskManagerServicesConfiguration,

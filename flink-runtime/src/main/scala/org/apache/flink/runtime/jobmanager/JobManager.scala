@@ -55,7 +55,7 @@ import org.apache.flink.runtime.highavailability.{HighAvailabilityServices, High
 import org.apache.flink.runtime.instance.{AkkaActorGateway, InstanceID, InstanceManager}
 import org.apache.flink.runtime.jobgraph.{JobGraph, JobStatus}
 import org.apache.flink.runtime.jobmanager.SubmittedJobGraphStore.SubmittedJobGraphListener
-import org.apache.flink.runtime.jobmanager.scheduler.{GeoScheduler => FlinkGeoScheduler, Scheduler => FlinkScheduler}
+import org.apache.flink.runtime.jobmanager.scheduler.{StaticBandwidthProvider, GeoScheduler => FlinkGeoScheduler, Scheduler => FlinkScheduler}
 import org.apache.flink.runtime.jobmanager.slots.ActorTaskManagerGateway
 import org.apache.flink.runtime.jobmaster.JobMaster
 import org.apache.flink.runtime.leaderelection.{LeaderContender, LeaderElectionService}
@@ -2517,15 +2517,19 @@ object JobManager {
 
       //choosing the type of scheduler
       if(injectedScheduler != null) {
+        LOG.debug("injected scheduler detected: " + injectedScheduler)
         scheduler = injectedScheduler
       } else {
         if (configuration.getBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED)) {
           //geoscheduling
           scheduler = new FlinkGeoScheduler(ExecutionContext.fromExecutor(futureExecutor))
+          scheduler.asInstanceOf[FlinkGeoScheduler].setBandwidthProvider(StaticBandwidthProvider.fromFile())
         } else {
           scheduler = new FlinkScheduler(ExecutionContext.fromExecutor(futureExecutor))
         }
       }
+
+      LOG.debug("starting JM with scheduler " + scheduler)
 
       libraryCacheManager =
         new BlobLibraryCacheManager(

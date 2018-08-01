@@ -21,15 +21,20 @@ public class SimpleJobGraph extends TestJobGraph {
 	private List<JobVertex> inputs;
 	private List<JobVertex> maps;
 
-
 	private JobVertex reduce;
+
 
 	private JobGraph jobGraph;
 
 	public SimpleJobGraph(int mapTasks) {
+		this(mapTasks, 4);
+	}
 
-		params = new Object[1];
+	public SimpleJobGraph(int mapTasks, int maxParallelism) {
+
+		params = new Object[2];
 		params[0] = mapTasks;
+		params[1] = maxParallelism;
 
 		inputs = new ArrayList<>();
 		maps = new ArrayList<>();
@@ -59,7 +64,7 @@ public class SimpleJobGraph extends TestJobGraph {
 				vertex.setParallelism(1);
 			}
 			if (vertex.getMaxParallelism() < 1) {
-				vertex.setMaxParallelism(4);
+				vertex.setMaxParallelism(maxParallelism);
 			}
 
 			vertex.setInvokableClass(VoidInvokable.class);

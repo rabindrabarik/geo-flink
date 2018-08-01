@@ -47,14 +47,16 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 
 	private final TestOutputWriter<TestOutputImpl> writer = new TestOutputWriter<>(this.getClass().getSimpleName() + ".csv");
 
-	@Parameterized.Parameters(name = "scheduling via: {0}")
+	@Parameterized.Parameters(name = "geoScheduling?: {0}")
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][]{
-			{new SpyableGeoScheduler(TestingUtils.defaultExecutor())}, {new SpyableFlinkScheduler(TestingUtils.defaultExecutor())}
+			{true}, {false}
 		});
 	}
 
 	@Parameterized.Parameter(0)
+	public boolean isGeoScheduling;
+
 	public Scheduler scheduler;
 
 	private ExecutionGraph executionGraph;
@@ -79,6 +81,12 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 
 	@Before
 	public void setup() {
+		if(isGeoScheduling) {
+			scheduler = new SpyableGeoScheduler(TestingUtils.defaultExecutor());
+		} else {
+			scheduler = new SpyableFlinkScheduler(TestingUtils.defaultExecutor());
+		}
+
 		SpyableScheduler spyableScheduler = ((SpyableScheduler) scheduler);
 
 		for (Instance i : instanceSet().getInstances()) {
