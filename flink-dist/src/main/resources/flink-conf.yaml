@@ -55,6 +55,14 @@ taskmanager.numberOfTaskSlots: 1
 
 parallelism.default: 1
 
+# The location of each TaskManager
+
+taskmanager.geo-location: location-1
+
+# Switch to enable/disable geo scheduling
+
+jobmanager.is-geo-scheduling-enabled: true
+
 # The default file system scheme and authority.
 # 
 # By default file paths without scheme are interpreted relative to the local

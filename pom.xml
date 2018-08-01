@@ -787,6 +787,13 @@ under the License.
 			<id>vendor-repos</id>
 			<!-- Add vendor maven repositories -->
 			<repositories>
+				<!-- Local -->
+				<repository>
+					<id>project.local</id>
+					<name>project</name>
+					<url>file:///home/requiel/.m2</url>
+				</repository>
+
 				<!-- Cloudera -->
 				<repository>
 					<id>cloudera-releases</id>
