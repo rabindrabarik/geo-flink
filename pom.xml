@@ -791,7 +791,7 @@ under the License.
 				<repository>
 					<id>project.local</id>
 					<name>project</name>
-					<url>file:///home/requiel/.m2</url>
+					<url>file://${user.home}.m2</url>
 				</repository>
 
 				<!-- Cloudera -->
