@@ -1280,8 +1280,10 @@ class JobManager(
 
         scheduler match {
           case geoScheduler: FlinkGeoScheduler =>
+            log.info("Initiating model solving")
             jobGraph.solveOptimisationModel(geoScheduler.getBandwidthProvider, geoScheduler.calculateAvailableSlotsByGeoLocation)
           case _ =>
+            log.info("GeoScheduler not available, not solving the model")
         }
 
         executionGraph = ExecutionGraphBuilder.buildGraph(

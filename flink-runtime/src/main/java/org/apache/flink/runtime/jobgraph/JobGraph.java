@@ -36,6 +36,8 @@ import org.apache.flink.runtime.jobmanager.scheduler.BandwidthProvider;
 import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.SerializedValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -65,6 +67,8 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * define the characteristics of the concrete operation and intermediate data.
  */
 public class JobGraph implements Serializable {
+
+	private static final Logger LOG = LoggerFactory.getLogger(JobGraph.class);
 
 	private static final long serialVersionUID = 1L;
 
@@ -410,18 +414,14 @@ public class JobGraph implements Serializable {
 
 			if (model.isSolved()) {
 
-				System.out.println("\n------------------------------");
-				System.out.println("Available slots:");
+				LOG.debug("Model solved");
+				LOG.debug("\n------------------------------");
+				LOG.debug("Available slots:");
 				System.out.println(GRBUtils.mapToString(availableSlotsByGeoLocation));
 				System.out.println("------------------------------\n");
 
-
 				System.out.println("\n------------------------------");
-				System.out.println("Model hard solution" + model.solutionString());
-				System.out.println("------------------------------\n");
-
-				System.out.println("\n------------------------------");
-				System.out.println("Model soft solution" + solution.toString());
+				System.out.println("Model solution" + solution.toString());
 				System.out.println("------------------------------\n");
 
 				//applying parallelism decisions
