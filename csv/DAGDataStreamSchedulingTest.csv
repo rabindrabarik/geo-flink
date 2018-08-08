@@ -64,3 +64,7 @@
 4.5,7.0,SpyableGeoScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(6,1,1,1.0,10.0)",7000
 5.285714285714279,25.0,SpyableFlinkScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(6,1,1,1.0,10.0)",0
 5.285714285714279,25.0,SpyableFlinkScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(6,1,1,1.0,10.0)",0
+4.5,7.0,SpyableGeoScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(6,1,1,1.0,10.0)",7000
+4.7857142857142785,25.0,SpyableFlinkScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(6,1,1,1.0,10.0)",0
+4.5,7.0,SpyableGeoScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(6,1,1,1.0,10.0)",7000
+4.7857142857142785,25.0,SpyableFlinkScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(6,1,1,1.0,10.0)",0

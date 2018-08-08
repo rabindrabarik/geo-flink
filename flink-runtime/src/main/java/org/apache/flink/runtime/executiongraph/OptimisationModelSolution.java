@@ -16,13 +16,13 @@ public class OptimisationModelSolution {
 	private Map<JobVertex, GeoLocation> placement;
 	private Map<JobVertex, Integer> parallelism;
 	private double networkCost;
-	private double executionTime;
+	private double executionSpeed;
 	private double modelExecutionTime;
 
-	public OptimisationModelSolution(Map<JobVertex, GeoLocation> placement, Map<JobVertex, Integer> parallelism, double networkCost, double executionTime, double modelExecutionTime) {
+	public OptimisationModelSolution(Map<JobVertex, GeoLocation> placement, Map<JobVertex, Integer> parallelism, double networkCost, double executionSpeed, double modelExecutionTime) {
 		this.placement = placement;
 		this.networkCost = networkCost;
-		this.executionTime = executionTime;
+		this.executionSpeed = executionSpeed;
 		this.parallelism = parallelism;
 		this.modelExecutionTime = modelExecutionTime;
 	}
@@ -72,8 +72,8 @@ public class OptimisationModelSolution {
 		return networkCost;
 	}
 
-	public double getExecutionTime() {
-		return executionTime;
+	public double getExecutionSpeed() {
+		return executionSpeed;
 	}
 
 	public double getModelExecutionTime() {
@@ -89,6 +89,10 @@ public class OptimisationModelSolution {
 
 		out.append("\n\n PARALLELISM:");
 		out.append(GRBUtils.mapToString(parallelism));
+
+		out.append("\n\n Model execution time: " + modelExecutionTime);
+		out.append("\n\n Streaming app network cost: " + networkCost);
+		out.append("\n\n Streaming app execution speed: " + executionSpeed);
 
 		return out.toString();
 	}

@@ -414,15 +414,15 @@ public class JobGraph implements Serializable {
 
 			if (model.isSolved()) {
 
-				LOG.debug("Model solved");
-				LOG.debug("\n------------------------------");
-				LOG.debug("Available slots:");
-				System.out.println(GRBUtils.mapToString(availableSlotsByGeoLocation));
-				System.out.println("------------------------------\n");
+				LOG.info("Model solved");
+				LOG.info("\n------------------------------");
+				LOG.info("Available slots:\n");
+				LOG.info(GRBUtils.mapToString(availableSlotsByGeoLocation));
+				LOG.info("------------------------------\n");
 
-				System.out.println("\n------------------------------");
-				System.out.println("Model solution" + solution.toString());
-				System.out.println("------------------------------\n");
+				LOG.info("\n------------------------------");
+				LOG.info("Model solution\n" + solution.toString());
+				LOG.info("------------------------------\n");
 
 				//applying parallelism decisions
 				for (JobVertex jobVertex : this.getVertices()) {

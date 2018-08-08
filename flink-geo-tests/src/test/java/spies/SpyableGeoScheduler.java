@@ -61,7 +61,7 @@ public class SpyableGeoScheduler extends GeoScheduler implements SpyableSchedule
 	public void addGraphSolution(ExecutionGraph executionGraph, OptimisationModelSolution solution) {
 		super.addGraphSolution(executionGraph, solution);
 		for (SchedulingDecisionSpy spy : spies) {
-			spy.setModelSolveTime(executionGraph, solution.getExecutionTime());
+			spy.setModelSolveTime(executionGraph, solution.getExecutionSpeed());
 
 		}
 	}
