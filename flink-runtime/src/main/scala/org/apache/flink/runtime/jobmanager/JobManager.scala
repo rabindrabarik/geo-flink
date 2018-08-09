@@ -1265,7 +1265,7 @@ class JobManager(
 
         val numSlots = scheduler.getTotalNumberOfSlots()
 
-        // see if there already exists an ExecutionGraph for the corresponding job ID
+        log.info("see if there already exists an ExecutionGraph for the corresponding job ID")
         val registerNewGraph = currentJobs.get(jobGraph.getJobID) match {
           case Some((graph, currentJobInfo)) =>
             executionGraph = graph
@@ -1278,9 +1278,10 @@ class JobManager(
         val allocationTimeout: Long = flinkConfiguration.getLong(
           JobManagerOptions.SLOT_REQUEST_TIMEOUT)
 
+        log.info("Checking scheduler...")
         scheduler match {
           case geoScheduler: FlinkGeoScheduler =>
-            log.info("Initiating model solving")
+            log.info("GeoScheduler not available, initiating model solving")
             jobGraph.solveOptimisationModel(geoScheduler.getBandwidthProvider, geoScheduler.calculateAvailableSlotsByGeoLocation)
           case _ =>
             log.info("GeoScheduler not available, not solving the model")
@@ -2519,7 +2520,7 @@ object JobManager {
 
       //choosing the type of scheduler
       if(injectedScheduler != null) {
-        LOG.debug("injected scheduler detected: " + injectedScheduler)
+        LOG.info("injected scheduler detected: " + injectedScheduler)
         scheduler = injectedScheduler
       } else {
         if (configuration.getBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED)) {
@@ -2531,7 +2532,7 @@ object JobManager {
         }
       }
 
-      LOG.debug("starting JM with scheduler " + scheduler)
+      LOG.info("starting JM with scheduler " + scheduler)
 
       libraryCacheManager =
         new BlobLibraryCacheManager(
