@@ -633,6 +633,11 @@ public abstract class AbstractStreamOperator<OUT>
 		return selectivity;
 	}
 
+	@Override
+	public void setSelectivity(double selectivity) {
+		this.selectivity = selectivity;
+	}
+
 	// ------------------------------------------------------------------------
 	//  Metrics
 	// ------------------------------------------------------------------------

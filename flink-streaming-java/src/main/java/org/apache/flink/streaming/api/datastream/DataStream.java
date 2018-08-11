@@ -66,10 +66,12 @@ import org.apache.flink.streaming.api.operators.ProcessOperator;
 import org.apache.flink.streaming.api.operators.StreamFilter;
 import org.apache.flink.streaming.api.operators.StreamFlatMap;
 import org.apache.flink.streaming.api.operators.StreamMap;
+import org.apache.flink.streaming.api.operators.StreamOperator;
 import org.apache.flink.streaming.api.operators.StreamSink;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.PartitionTransformation;
 import org.apache.flink.streaming.api.transformations.StreamTransformation;
+import org.apache.flink.streaming.api.transformations.TwoInputTransformation;
 import org.apache.flink.streaming.api.transformations.UnionTransformation;
 import org.apache.flink.streaming.api.windowing.assigners.GlobalWindows;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
@@ -1336,5 +1338,37 @@ public class DataStream<T> {
 	@Internal
 	public StreamTransformation<T> getTransformation() {
 		return transformation;
+	}
+
+	/**
+	 * @return The selectivity of the underlying user defined operator if any. 1 otherwise
+	 */
+	public double getSelectivity() {
+		StreamOperator operator;
+		operator = transformation instanceof OneInputTransformation ? ((OneInputTransformation) transformation).getOperator() : null;
+		if (operator != null) {
+			return operator.getSelectivity();
+		}
+		operator = transformation instanceof TwoInputTransformation ? ((TwoInputTransformation) transformation).getOperator() : null;
+		if (operator != null) {
+			return operator.getSelectivity();
+		}
+		return 1d;
+	}
+
+	/**
+	 * Sets the selectivity of the underlying user defined operator, if any.
+	 */
+	public DataStream<T> setSelectivity(double selectivity) {
+		StreamOperator operator;
+		operator = transformation instanceof OneInputTransformation ? ((OneInputTransformation) transformation).getOperator() : null;
+		if (operator != null) {
+			operator.setSelectivity(selectivity);
+		}
+		operator = transformation instanceof TwoInputTransformation ? ((TwoInputTransformation) transformation).getOperator() : null;
+		if (operator != null) {
+			operator.setSelectivity(selectivity);
+		}
+		return this;
 	}
 }

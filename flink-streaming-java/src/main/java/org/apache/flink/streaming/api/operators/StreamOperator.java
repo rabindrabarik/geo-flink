@@ -126,6 +126,8 @@ public interface StreamOperator<OUT> extends CheckpointListener, KeyContext, Dis
 
 	double getSelectivity();
 
+	void setSelectivity(double selectivity);
+
 	MetricGroup getMetricGroup();
 
 	OperatorID getOperatorID();
