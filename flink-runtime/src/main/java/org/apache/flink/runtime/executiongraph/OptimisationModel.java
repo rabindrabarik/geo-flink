@@ -142,14 +142,14 @@ public class OptimisationModel {
 	 * The number of vertices placed at each location does
 	 * not exceed the slots available there
 	 */
-	private void addSlotOverflowConstraint () throws GRBException {
+	private void addSlotOverflowConstraint() throws GRBException {
 		for (GeoLocation location : locations) {
-			String name = getVariableString("allocated_subtasks_", location);
-			GRBQuadExpr lhs = new GRBQuadExpr();
 			for (JobVertex vertex : vertices) {
+				String name = getVariableString("allocated_subtasks_", vertex, location);
+				GRBQuadExpr lhs = new GRBQuadExpr();
 				lhs.addTerm(1d, placement.get(vertex, location), parallelism.get(vertex));
+				model.addQConstr(lhs, GRB.LESS_EQUAL, slots.get(location), name);
 			}
-			model.addQConstr(lhs, GRB.LESS_EQUAL, slots.get(location), name);
 		}
 	}
 

@@ -33,6 +33,7 @@ import org.apache.flink.runtime.executiongraph.OptimisationModelParameters;
 import org.apache.flink.runtime.executiongraph.OptimisationModelSolution;
 import org.apache.flink.runtime.jobgraph.tasks.JobCheckpointingSettings;
 import org.apache.flink.runtime.jobmanager.scheduler.BandwidthProvider;
+import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
 import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.util.InstantiationUtil;
 import org.apache.flink.util.SerializedValue;
@@ -412,6 +413,8 @@ public class JobGraph implements Serializable {
 
 			this.solution = model.optimize();
 
+			setSlotSharing(availableSlotsByGeoLocation.keySet());
+
 			if (model.isSolved()) {
 
 				LOG.info("Model solved");
@@ -431,6 +434,27 @@ public class JobGraph implements Serializable {
 			}
 		} catch (GRBException e) {
 			e.printStackTrace();
+		}
+	}
+
+	private void setSlotSharing(Set<GeoLocation> locations) {
+		if(this.solution == null) {
+			throw new RuntimeException("You shouldn't be calling this before solving the model");
+		}
+
+		if(locations == null || locations.isEmpty()) {
+			throw new IllegalArgumentException("Locations set cannot be empty or null");
+		}
+
+		Map<GeoLocation, SlotSharingGroup> groups = new HashMap<>();
+
+		for (GeoLocation location : locations) {
+			groups.put(location, new SlotSharingGroup());
+
+		}
+
+		for (JobVertex jobVertex : this.getVertices()) {
+			jobVertex.setSlotSharingGroup(groups.get(solution.getPlacement(jobVertex)));
 		}
 	}
 

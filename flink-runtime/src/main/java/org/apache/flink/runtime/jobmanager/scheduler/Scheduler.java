@@ -297,7 +297,7 @@ public class Scheduler implements InstanceListener, SlotAvailabilityListener, Sl
 		}
 	}
 
-	private SimpleSlot getSlotFromGroup(Iterable<TaskManagerLocation> preferredLocations, ExecutionVertex vertex, SlotSharingGroupAssignment assignment, CoLocationConstraint constraint) {
+	protected SimpleSlot getSlotFromGroup(Iterable<TaskManagerLocation> preferredLocations, ExecutionVertex vertex, SlotSharingGroupAssignment assignment, CoLocationConstraint constraint) {
 		SimpleSlot slotFromGroup;
 		if (constraint == null) {
 			slotFromGroup = assignment.getSlotForTask(vertex.getJobvertexId(), preferredLocations);

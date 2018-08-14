@@ -149,7 +149,20 @@ public class GeoScheduler extends Scheduler {
 			locationsToPlaceIn.add(instance.getTaskManagerLocation());
 		}
 
-		SimpleSlot slotToUse = super.getFreeSlotForTask(task.getTaskToExecute().getVertex(), locationsToPlaceIn, true);
+		SimpleSlot slotToUse = null;
+
+		//try to find a shared slot
+		if(jobVertex.getSlotSharingGroup() != null) {
+			slotToUse = scheduleWithSlotSharing(task, whereToPlace, locationsToPlaceIn);
+		}
+
+		if(slotToUse == null) {
+			//still null, so we didn't find a shared slot, find another slot
+			slotToUse = super.getFreeSlotForTask(task.getTaskToExecute().getVertex(), locationsToPlaceIn, true);
+			if(slotToUse != null) {
+				LOG.info("Scheduled vertex {} without slot sharing at slot {}", jobVertex, slotToUse);
+			}
+		}
 
 		if(slotToUse == null) {
 			//we weren't able to schedule respecting the model solution, delegate to standard scheduler
@@ -158,6 +171,39 @@ public class GeoScheduler extends Scheduler {
 		}
 
 		return CompletableFuture.completedFuture(slotToUse);
+	}
+
+	private SimpleSlot scheduleWithSlotSharing(ScheduledUnit task, GeoLocation whereToPlace, ArrayList<TaskManagerLocation> locationsToPlaceIn) {
+		JobVertex jobVertex = task.getTaskToExecute().getVertex().getJobVertex().getJobVertex();
+		SimpleSlot slotToUse = null;
+		SlotSharingGroupAssignment assignment = jobVertex.getSlotSharingGroup().getTaskAssignment();
+
+		if(assignment.getNumberOfAvailableSlotsForGroup(jobVertex.getID()) == 0) {
+			// the assignment does not have any available slots, trying to add a new one to it
+			SharedSlot newSharedSlot = null;
+
+			Iterator<Instance> iterator = allInstancesByGeoLocation.get(whereToPlace).iterator();
+
+			while (iterator.hasNext() && newSharedSlot == null) {
+				Instance instance = iterator.next();
+				try {
+					newSharedSlot = instance.allocateSharedSlot(assignment);
+				} catch (InstanceDiedException ignored) {
+				}
+			}
+
+			if (newSharedSlot != null) {
+				// we found a new shared slot at this location, adding it to the group and getting the subslot
+				slotToUse = assignment.addSharedSlotAndAllocateSubSlot(newSharedSlot, Locality.UNKNOWN, jobVertex.getID());
+			}
+		}
+
+		if(slotToUse == null) {
+			slotToUse = super.getSlotFromGroup(locationsToPlaceIn, task.getTaskToExecute().getVertex(), assignment, null);
+		} else {
+			LOG.info("Scheduled vertex {} using slot sharing at slot {}", jobVertex, slotToUse);
+		}
+		return slotToUse;
 	}
 
 	public Map<GeoLocation, Set<Instance>> getAllInstancesByGeoLocation() {
