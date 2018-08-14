@@ -31,10 +31,6 @@ public class SelectionDataStreamSchedulingTest extends DataStreamSchedulingTestF
 		2d,
 		1d);
 
-	public SelectionDataStreamSchedulingTest(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
-		super(scheduler, miniClusterType);
-	}
-
 	@Override
 	public TestGeoLocationAndBandwidths getTestGeoLocationAndBandwidths() {
 		return geoLocationAndBandwidths;

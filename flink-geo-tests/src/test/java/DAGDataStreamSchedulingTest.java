@@ -38,10 +38,6 @@ public class DAGDataStreamSchedulingTest extends DataStreamSchedulingTestFramewo
 		1d,
 		10d);
 
-	public DAGDataStreamSchedulingTest(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
-		super(scheduler, miniClusterType);
-	}
-
 
 	@Override
 	public TestGeoLocationAndBandwidths getTestGeoLocationAndBandwidths() {

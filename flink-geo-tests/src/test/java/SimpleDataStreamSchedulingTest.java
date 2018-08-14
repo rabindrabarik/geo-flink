@@ -20,16 +20,12 @@ import static org.apache.flink.test.util.TestBaseUtils.checkLinesAgainstRegexp;
 
 public class SimpleDataStreamSchedulingTest extends DataStreamSchedulingTestFramework {
 
-	private TestGeoLocationAndBandwidths geoLocationAndBandwidths = new CentralAndEdgeGeoLocationAndBandwidths(
+	private static TestGeoLocationAndBandwidths geoLocationAndBandwidths = new CentralAndEdgeGeoLocationAndBandwidths(
 		3,
 		4,
 		10,
 		2d,
 		1d);
-
-	public SimpleDataStreamSchedulingTest(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
-		super(scheduler, miniClusterType);
-	}
 
 	@Override
 	public TestGeoLocationAndBandwidths getTestGeoLocationAndBandwidths() {

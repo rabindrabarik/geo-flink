@@ -63,8 +63,10 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 		return configuration;
 	}
 
+	@Parameterized.Parameter(0)
 	public SpyableScheduler scheduler;
 
+	@Parameterized.Parameter(1)
 	public MiniClusterResource.MiniClusterType miniClusterType;
 
 	public int numberTaskManagers;
@@ -73,16 +75,13 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 
 	public String jobName;
 
-	public DataStreamSchedulingTestFramework(SpyableScheduler scheduler, MiniClusterResource.MiniClusterType miniClusterType) {
-		this.scheduler = scheduler;
-
-		 if(scheduler instanceof  SpyableGeoScheduler) {
+	public DataStreamSchedulingTestFramework() {
+			 if(scheduler instanceof  SpyableGeoScheduler) {
 			 ((SpyableGeoScheduler) scheduler).setBandwidthProvider(new StaticBandwidthProvider(getTestGeoLocationAndBandwidths().getBandwidths()));
 		 } else if (scheduler instanceof  SpyableFlinkScheduler) {
 			 ((SpyableFlinkScheduler) scheduler).setBandwidthProvider(new StaticBandwidthProvider(getTestGeoLocationAndBandwidths().getBandwidths()));
 		 }
 
-		this.miniClusterType = miniClusterType;
 		this.numberSlotsPerTaskManager = getSlotAverage(getTestGeoLocationAndBandwidths().getGeoLocationSlotMap());
 		this.numberTaskManagers = getTestGeoLocationAndBandwidths().getGeoLocationSlotMap().isEmpty() ? 1 : getTestGeoLocationAndBandwidths().getGeoLocationSlotMap().size();
 	}

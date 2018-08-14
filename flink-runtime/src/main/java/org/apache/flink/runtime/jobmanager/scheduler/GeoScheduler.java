@@ -7,15 +7,21 @@ import org.apache.flink.runtime.concurrent.FutureUtils;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
 import org.apache.flink.runtime.executiongraph.OptimisationModelSolution;
 import org.apache.flink.runtime.instance.Instance;
+import org.apache.flink.runtime.instance.InstanceDiedException;
+import org.apache.flink.runtime.instance.SharedSlot;
 import org.apache.flink.runtime.instance.SimpleSlot;
+import org.apache.flink.runtime.instance.SlotSharingGroupAssignment;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobmaster.LogicalSlot;
 import org.apache.flink.runtime.jobmaster.SlotRequestId;
 import org.apache.flink.runtime.taskmanager.TaskManagerLocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +31,8 @@ import java.util.concurrent.Executor;
  * This scheduler allows Flink to make better allocation decisions when the task managers are executed in geo-distributed data centers
  */
 public class GeoScheduler extends Scheduler {
+
+	private static Logger LOG = LoggerFactory.getLogger(GeoScheduler.class);
 
 	private Map<GeoLocation, Set<Instance>> allInstancesByGeoLocation = new HashMap<>();
 	private Map<ExecutionGraph, OptimisationModelSolution> solutions = new HashMap<>();
@@ -123,7 +131,9 @@ public class GeoScheduler extends Scheduler {
 		}
 
 		JobVertex jobVertex = task.getTaskToExecute().getVertex().getJobVertex().getJobVertex();
+
 		GeoLocation whereToPlace = solution.getPlacement(jobVertex);
+
 		if(whereToPlace == null) {
 			throw new IllegalArgumentException("The placement for this job vertex was not found. This should never happen");
 		}
@@ -143,6 +153,7 @@ public class GeoScheduler extends Scheduler {
 
 		if(slotToUse == null) {
 			//we weren't able to schedule respecting the model solution, delegate to standard scheduler
+			LOG.info("GeoScheduler failure for vertex {}, delegating", jobVertex);
 			return super.allocateSlot(slotRequestId, task, allowQueued, slotProfile, allocationTimeout);
 		}
 

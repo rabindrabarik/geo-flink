@@ -13,3 +13,11 @@ networkCost,executionSpeed,schedulerClassName,jobGraphCalssName,instanceSetClass
 3.9999999999999964,62.0,SpyableFlinkScheduler,windowJoin,center_10_edge3_4_edge1_4_edge2_4_,0
 0.0,18.0,SpyableGeoScheduler,windowJoin,center_10_edge3_4_edge1_4_edge2_4_,18000
 3.9999999999999964,62.0,SpyableFlinkScheduler,windowJoin,center_10_edge3_4_edge1_4_edge2_4_,0
+2.4,32.0,SpyableGeoScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(3,4,10,2.0,1.0)",32000
+3.9999999999999964,62.0,SpyableFlinkScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(3,4,10,2.0,1.0)",0
+2.6,32.0,SpyableGeoScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(3,4,10,2.0,1.0)",32000
+3.9999999999999964,62.0,SpyableFlinkScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(3,4,10,2.0,1.0)",0
+2.4,32.0,SpyableGeoScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(3,4,10,2.0,1.0)",32000
+3.9999999999999964,62.0,SpyableFlinkScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(3,4,10,2.0,1.0)",0
+3.0000000000000004,32.0,SpyableGeoScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(3,4,10,2.0,1.0)",32000
+3.9999999999999964,62.0,SpyableFlinkScheduler,windowJoin,"CentralAndEdgeGeoLocationAndBandwidths(3,4,10,2.0,1.0)",0
