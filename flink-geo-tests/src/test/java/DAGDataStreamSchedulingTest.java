@@ -14,11 +14,9 @@ import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindo
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.util.TestStreamEnvironment;
-import org.apache.flink.test.util.MiniClusterResource;
 import org.apache.flink.util.Collector;
 import org.junit.Before;
 import org.junit.Test;
-import spies.SpyableScheduler;
 import testingFrameworks.DataStreamSchedulingTestFramework;
 import writableTypes.CentralAndEdgeGeoLocationAndBandwidths;
 import writableTypes.TestGeoLocationAndBandwidths;
@@ -33,8 +31,8 @@ public class DAGDataStreamSchedulingTest extends DataStreamSchedulingTestFramewo
 
 	private static TestGeoLocationAndBandwidths geoLocationAndBandwidths = new CentralAndEdgeGeoLocationAndBandwidths(
 		6,
-		1,
-		1,
+		5,
+		10,
 		1d,
 		10d);
 
@@ -64,6 +62,7 @@ public class DAGDataStreamSchedulingTest extends DataStreamSchedulingTestFramewo
 
 		try {
 			TestStreamEnvironment env = (TestStreamEnvironment) getEnvironment();
+
 			env.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
 
 			DataStream<Tuple2<String, Integer>> input1 = env.fromCollection(makeInputCollection(), TypeInformation.of(new TypeHint<Tuple2<String, Integer>>(){}))

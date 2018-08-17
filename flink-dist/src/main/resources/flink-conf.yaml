@@ -63,6 +63,14 @@ taskmanager.geo-location: location-1
 
 jobmanager.is-geo-scheduling-enabled: true
 
+# Weight of network cost. execution_speed_weight = 1 - network_cost_weight
+
+optimisation-model.network-cost-weight: 0.5
+
+# Enable slot sharing when geo scheduling
+
+optimisation-model.is-slot-sharing-enabled: false
+
 # The default file system scheme and authority.
 # 
 # By default file paths without scheme are interpreted relative to the local
