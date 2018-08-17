@@ -43,8 +43,7 @@ public class OptimisationModel {
 	private GRBVar executionSpeed;
 
 	// Weights //
-	private double networkCostWeight;
-	private double executionSpeedWeight;
+	private OptimisationModelParameters parameters;
 
 	public OptimisationModel(Collection<JobVertex> vertices,
 							 Set<GeoLocation> locations,
@@ -69,13 +68,12 @@ public class OptimisationModel {
 
 		this.slots = slots;
 
-		this.networkCostWeight = parameters.getNetworkCostWeight();
-		this.executionSpeedWeight = - parameters.getExecutionSpeedWeight();
+		this.parameters = parameters;
 
 		//double the time spent on heuristics
 		model.set(GRB.DoubleParam.Heuristics, 0.1);
 
-		model.set(GRB.DoubleParam.TimeLimit, parameters.getTimeForEachTaskBeforeHeuristicSolution() * vertices.size());
+		model.set(GRB.DoubleParam.TimeLimit, this.parameters.getTimeForEachTaskBeforeHeuristicSolution() * vertices.size());
 
 		addPlacementVariables();
 		addParallelismVariables();
@@ -84,7 +82,12 @@ public class OptimisationModel {
 		addExecutionSpeedVariable();
 
 		addTaskAllocationConstraint();
-		addSlotOverflowConstraint();
+
+		if(parameters.isSlotSharingEnabled()) {
+			addSharingSlotOverflowConstraint();
+		} else {
+			addNoSharingSlotOverflowConstraint();
+		}
 	}
 
 	private void addPlacementVariables() throws GRBException {
@@ -113,12 +116,12 @@ public class OptimisationModel {
 	}
 
 	private void addNetworkCostVariable() throws GRBException {
-		networkCost = model.addVar(0, GRB.INFINITY, networkCostWeight, GRB.CONTINUOUS, "network_cost");
+		networkCost = model.addVar(0, GRB.INFINITY, parameters.getNetworkCostWeight(), GRB.CONTINUOUS, "network_cost");
 		model.addQConstr(networkCost, GRB.EQUAL, makeNetworkCostExpression(), "network_cost");
 	}
 
 	private void addExecutionSpeedVariable() throws GRBException {
-		executionSpeed = model.addVar(0, GRB.INFINITY, executionSpeedWeight, GRB.CONTINUOUS, "execution_speed");
+		executionSpeed = model.addVar(0, GRB.INFINITY, parameters.getExecutionSpeedWeight(), GRB.CONTINUOUS, "execution_speed");
 		model.addConstr(executionSpeed, GRB.EQUAL, makeExecutionSpeedExpression(), "execution_speed");
 	}
 
@@ -142,7 +145,7 @@ public class OptimisationModel {
 	 * The number of vertices placed at each location does
 	 * not exceed the slots available there
 	 */
-	private void addSlotOverflowConstraint() throws GRBException {
+	private void addSharingSlotOverflowConstraint() throws GRBException {
 		for (GeoLocation location : locations) {
 			for (JobVertex vertex : vertices) {
 				String name = getVariableString("allocated_subtasks_", vertex, location);
@@ -150,6 +153,21 @@ public class OptimisationModel {
 				lhs.addTerm(1d, placement.get(vertex, location), parallelism.get(vertex));
 				model.addQConstr(lhs, GRB.LESS_EQUAL, slots.get(location), name);
 			}
+		}
+	}
+
+	/**
+	 * The sum of all task vertices placed at each location does
+	 * not exceed the slots available there
+	 */
+	private void addNoSharingSlotOverflowConstraint() throws GRBException {
+		for (GeoLocation location : locations) {
+			String name = getVariableString("allocated_subtasks_", location);
+			GRBQuadExpr lhs = new GRBQuadExpr();
+			for (JobVertex vertex : vertices) {
+				lhs.addTerm(1d, placement.get(vertex, location), parallelism.get(vertex));
+			}
+			model.addQConstr(lhs, GRB.LESS_EQUAL, slots.get(location), name);
 		}
 	}
 
@@ -244,7 +262,7 @@ public class OptimisationModel {
 			out += networkCost.get(GRB.DoubleAttr.X);
 
 			out += "\n\n------ OBJECTIVE ------ \n";
-			out += executionSpeed.get(GRB.DoubleAttr.X) + " * " + executionSpeedWeight + " + " + networkCost.get(GRB.DoubleAttr.X) + " * " + networkCostWeight + " = " + model.get(GRB.DoubleAttr.ObjVal);
+			out += executionSpeed.get(GRB.DoubleAttr.X) + " * " + parameters.getExecutionSpeedWeight() + " + " + networkCost.get(GRB.DoubleAttr.X) + " * " + parameters.getNetworkCostWeight() + " = " + model.get(GRB.DoubleAttr.ObjVal);
 
 			out += "\n\n------ MODEL RUNTIME ------ \n";
 			out += model.get(GRB.DoubleAttr.Runtime) + " s";

@@ -413,7 +413,11 @@ public class JobGraph implements Serializable {
 
 			this.solution = model.optimize();
 
-			setSlotSharing(availableSlotsByGeoLocation.keySet());
+			if(optimisationModelParameters.isSlotSharingEnabled()) {
+				setSlotSharing(availableSlotsByGeoLocation.keySet());
+			} else {
+				unsetSlotSharing();
+			}
 
 			if (model.isSolved()) {
 
@@ -455,6 +459,16 @@ public class JobGraph implements Serializable {
 
 		for (JobVertex jobVertex : this.getVertices()) {
 			jobVertex.setSlotSharingGroup(groups.get(solution.getPlacement(jobVertex)));
+		}
+	}
+
+	private void unsetSlotSharing() {
+		if(this.solution == null) {
+			throw new RuntimeException("You shouldn't be calling this before solving the model");
+		}
+
+		for (JobVertex jobVertex : this.getVertices()) {
+			jobVertex.setSlotSharingGroup(null);
 		}
 	}
 
