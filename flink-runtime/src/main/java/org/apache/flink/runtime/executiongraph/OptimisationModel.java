@@ -121,7 +121,7 @@ public class OptimisationModel {
 	}
 
 	private void addExecutionSpeedVariable() throws GRBException {
-		executionSpeed = model.addVar(0, GRB.INFINITY, parameters.getExecutionSpeedWeight(), GRB.CONTINUOUS, "execution_speed");
+		executionSpeed = model.addVar(-GRB.INFINITY, 0, parameters.getExecutionSpeedWeight(), GRB.CONTINUOUS, "execution_speed");
 		model.addConstr(executionSpeed, GRB.EQUAL, makeExecutionSpeedExpression(), "execution_speed");
 	}
 
@@ -227,7 +227,7 @@ public class OptimisationModel {
 	private GRBLinExpr makeExecutionSpeedExpression() {
 		GRBLinExpr expr = new GRBLinExpr();
 		for (JobVertex vertex : vertices) {
-			expr.addTerm(vertex.getWeight(), parallelism.get(vertex));
+			expr.addTerm(- vertex.getWeight(), parallelism.get(vertex));
 		}
 		return expr;
 	}

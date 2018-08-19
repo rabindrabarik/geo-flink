@@ -21,7 +21,10 @@ package org.apache.flink.streaming.util;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.cache.DistributedCache;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.Path;
+import org.apache.flink.runtime.executiongraph.ExecutionGraph;
+import org.apache.flink.runtime.executiongraph.ExecutionGraphBuilder;
 import org.apache.flink.runtime.executiongraph.OptimisationModelParameters;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.minicluster.JobExecutor;
@@ -29,6 +32,7 @@ import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironmentFactory;
 import org.apache.flink.streaming.api.graph.StreamGraph;
+import org.apache.flink.test.util.TestBaseUtils;
 import org.apache.flink.util.Preconditions;
 
 import java.net.URL;
@@ -89,6 +93,7 @@ public class TestStreamEnvironment extends StreamExecutionEnvironment {
 
 		return jobExecutor.executeJobBlocking(jobGraph);
 	}
+
 
 	/**
 	 * Set the optimisation model parameters used to solve the models associated with jobs submitted to
