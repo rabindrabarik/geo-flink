@@ -63,6 +63,8 @@ public class DAGDataStreamSchedulingTest extends DataStreamSchedulingTestFramewo
 		try {
 			TestStreamEnvironment env = (TestStreamEnvironment) getEnvironment();
 
+			env.getModelParameters().setSlotSharingEnabled(true);
+
 			env.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
 
 			DataStream<Tuple2<String, Integer>> input1 = env.fromCollection(makeInputCollection(), TypeInformation.of(new TypeHint<Tuple2<String, Integer>>(){}))
@@ -85,7 +87,7 @@ public class DAGDataStreamSchedulingTest extends DataStreamSchedulingTestFramewo
 						return value.f1;
 					}
 				})
-				.window(TumblingEventTimeWindows.of(Time.of(5, TimeUnit.SECONDS)))
+				.window(TumblingEventTimeWindows.of(Time.of(5, TimeUnit.MILLISECONDS)))
       			.apply(new JoinFunction<Tuple2<String, Integer>, Tuple2<String, Integer>, Tuple3<String, String, Integer>>() {
 					@Override
 					public Tuple3<String, String, Integer> join(Tuple2<String, Integer> first, Tuple2<String, Integer> second) throws Exception {
@@ -108,7 +110,7 @@ public class DAGDataStreamSchedulingTest extends DataStreamSchedulingTestFramewo
 						return value.f1;
 					}
 				})
-				.window(TumblingEventTimeWindows.of(Time.of(5, TimeUnit.SECONDS)))
+				.window(TumblingEventTimeWindows.of(Time.of(5, TimeUnit.MILLISECONDS)))
 				.apply(new JoinFunction<Tuple3<String, String, Integer>, Tuple2<String, Integer>, Tuple3<String, String, Integer>>() {
 					@Override
 					public Tuple3<String, String, Integer> join(Tuple3<String, String, Integer> first, Tuple2<String, Integer> second) throws Exception {
@@ -116,7 +118,7 @@ public class DAGDataStreamSchedulingTest extends DataStreamSchedulingTestFramewo
 					}
 				});
 
-			join1and2and3.timeWindowAll(Time.of(5, TimeUnit.SECONDS), Time.of(2, TimeUnit.SECONDS))
+			join1and2and3.timeWindowAll(Time.of(5, TimeUnit.MILLISECONDS), Time.of(2, TimeUnit.MILLISECONDS))
 				.apply(new AllWindowFunction<Tuple3<String,String,Integer>, Object, TimeWindow>() {
 					@Override
 					public void apply(TimeWindow window, Iterable<Tuple3<String, String, Integer>> values, Collector<Object> out) throws Exception {

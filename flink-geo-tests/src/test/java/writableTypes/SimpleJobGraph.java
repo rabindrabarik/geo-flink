@@ -63,9 +63,8 @@ public class SimpleJobGraph extends TestJobGraph {
 			if (vertex.getParallelism() < 1) {
 				vertex.setParallelism(1);
 			}
-			if (vertex.getMaxParallelism() < 1) {
-				vertex.setMaxParallelism(maxParallelism);
-			}
+
+			vertex.setMaxParallelism(maxParallelism);
 
 			vertex.setInvokableClass(VoidInvokable.class);
 		}

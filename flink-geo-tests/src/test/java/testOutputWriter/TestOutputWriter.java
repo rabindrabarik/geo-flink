@@ -25,6 +25,10 @@ public class TestOutputWriter<T extends TestOutput> {
 
 			writeHeader = createDirsAndFileIfNeeded(f);
 
+			if(!writeHeader) {
+				writeHeader = f.length() == 0;
+			}
+
 			BufferedWriter bufferedWriter = Files.newBufferedWriter(Paths.get(fullPathString), StandardOpenOption.APPEND);
 			csvPrinter = new CSVPrinter(bufferedWriter, CSVFormat.DEFAULT);
 		} catch (IOException e) {
