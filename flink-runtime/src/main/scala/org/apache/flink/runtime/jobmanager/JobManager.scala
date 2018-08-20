@@ -1288,7 +1288,7 @@ class JobManager(
             parameters.setNetworkCostWeight(flinkConfiguration.getDouble(OptimisationModelOptions.NETWORK_COST))
             parameters.setSlotSharingEnabled(flinkConfiguration.getBoolean(OptimisationModelOptions.GEO_ENABLE_SLOT_SHARING))
 
-            jobGraph.setOptimisationModelParameters(parameters)
+            jobGraph.setOptimisationModfelParameters(parameters)
 
             jobGraph.solveOptimisationModel(geoScheduler.getBandwidthProvider, geoScheduler.calculateAvailableSlotsByGeoLocation)
           case _ =>
@@ -1896,6 +1896,15 @@ class JobManager(
     })
     jobManagerMetricGroup.gauge[Long, Gauge[Long]]("numRunningJobs", new Gauge[Long] {
       override def getValue: Long = JobManager.this.currentJobs.size
+    })
+    jobManagerMetricGroup.gauge[Long, Gauge[Long]]("isGeoSchedulingEnabled", new Gauge[Long] {
+      override def getValue: Long = {
+        if (JobManager.this.flinkConfiguration.getBoolean(JobManagerOptions.IS_GEO_SCHEDULING_ENABLED)) {
+          1
+        } else {
+          0
+        }
+      }
     })
   }
 }
