@@ -443,7 +443,7 @@ public class JobGraph implements Serializable {
 
 	private void setSlotSharing(Set<GeoLocation> locations) {
 		if(this.solution == null) {
-			throw new RuntimeException("You shouldn't be calling this before solving the model");
+			LOG.warn("You shouldn't be calling this before solving the model");
 		}
 
 		if(locations == null || locations.isEmpty()) {
@@ -464,7 +464,7 @@ public class JobGraph implements Serializable {
 
 	private void unsetSlotSharing() {
 		if(this.solution == null) {
-			throw new RuntimeException("You shouldn't be calling this before solving the model");
+			LOG.warn("You shouldn't be calling this before solving the model");
 		}
 
 		for (JobVertex jobVertex : this.getVertices()) {
