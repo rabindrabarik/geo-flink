@@ -1288,7 +1288,7 @@ class JobManager(
             parameters.setNetworkCostWeight(flinkConfiguration.getDouble(OptimisationModelOptions.NETWORK_COST))
             parameters.setSlotSharingEnabled(flinkConfiguration.getBoolean(OptimisationModelOptions.GEO_ENABLE_SLOT_SHARING))
 
-            jobGraph.setOptimisationModfelParameters(parameters)
+            jobGraph.setOptimisationModelParameters(parameters)
 
             jobGraph.solveOptimisationModel(geoScheduler.getBandwidthProvider, geoScheduler.calculateAvailableSlotsByGeoLocation)
           case _ =>

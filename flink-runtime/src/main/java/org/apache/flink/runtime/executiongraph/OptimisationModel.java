@@ -22,28 +22,28 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class OptimisationModel {
+public abstract class OptimisationModel {
 	// Constants //
-	private final Iterable<JobVertex> vertices;
-	private final Set<GeoLocation> locations;
-	private final BandwidthProvider bandwidthProvider;
-	private final Map<GeoLocation, Integer> slots;
-	private final Map<JobVertex, GeoLocation> placedVertices;
+	protected final Iterable<JobVertex> vertices;
+	protected final Set<GeoLocation> locations;
+	protected final BandwidthProvider bandwidthProvider;
+	protected final Map<GeoLocation, Integer> slots;
+	protected final Map<JobVertex, GeoLocation> placedVertices;
 
 
 	// Variables //
-	private final Map<JobVertex, GRBVar> parallelism = new HashMap<>();
-	private final TwoKeysMap<JobVertex, GeoLocation, GRBVar> placement = new TwoKeysMultiMap<>();
-	private GRBEnv grbEnv;
-	private GRBModel model;
+	protected final Map<JobVertex, GRBVar> parallelism = new HashMap<>();
+	protected final TwoKeysMap<JobVertex, GeoLocation, GRBVar> placement = new TwoKeysMultiMap<>();
+	protected GRBEnv grbEnv;
+	protected GRBModel model;
 
 
 	// Objective //
-	private GRBVar networkCost;
-	private GRBVar executionSpeed;
+	protected GRBVar networkCost;
+	protected GRBVar executionSpeed;
 
 	// Weights //
-	private OptimisationModelParameters parameters;
+	protected OptimisationModelParameters parameters;
 
 	public OptimisationModel(Collection<JobVertex> vertices,
 							 Set<GeoLocation> locations,
@@ -58,7 +58,7 @@ public class OptimisationModel {
 		this.vertices = Preconditions.checkNotNull(vertices);
 		this.locations = Preconditions.checkNotNull(locations);
 
-		if(bandwidthProvider != null) {
+		if (bandwidthProvider != null) {
 			this.bandwidthProvider = bandwidthProvider;
 		} else {
 			this.bandwidthProvider = new StaticBandwidthProvider(new TwoKeysMultiMap<>());
@@ -75,162 +75,10 @@ public class OptimisationModel {
 
 		model.set(GRB.DoubleParam.TimeLimit, this.parameters.getTimeForEachTaskBeforeHeuristicSolution() * vertices.size());
 
-		addPlacementVariables();
-		addParallelismVariables();
-
-		addNetworkCostVariable();
-		addExecutionSpeedVariable();
-
-		addTaskAllocationConstraint();
-
-		if(parameters.isSlotSharingEnabled()) {
-			addSharingSlotOverflowConstraint();
-		} else {
-			addNoSharingSlotOverflowConstraint();
-		}
+		init();
 	}
 
-	private void addPlacementVariables() throws GRBException {
-		for (JobVertex jv : vertices) {
-			boolean isPlaced = placedVertices.containsKey(jv);
-			for (GeoLocation gl : locations) {
-				if (isPlaced) {
-					//placed vertices' placement variables are static: 1 or 0
-					if (placedVertices.get(jv).equals(gl)) {
-						placement.put(jv, gl, model.addVar(1, 1, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
-					} else {
-						placement.put(jv, gl, model.addVar(0, 0, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
-					}
-				} else {
-					//non-placed vertices' placement variables are free
-					placement.put(jv, gl, model.addVar(0, 1, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
-				}
-			}
-		}
-	}
-
-	private void addParallelismVariables() throws GRBException {
-		for (JobVertex jv : vertices) {
-			parallelism.put(jv, model.addVar(1d, getMaxParallelism(jv), 0.0, GRB.INTEGER, getVariableString("placement",jv)));
-		}
-	}
-
-	private void addNetworkCostVariable() throws GRBException {
-		networkCost = model.addVar(0, GRB.INFINITY, parameters.getNetworkCostWeight(), GRB.CONTINUOUS, "network_cost");
-		model.addQConstr(networkCost, GRB.EQUAL, makeNetworkCostExpression(), "network_cost");
-	}
-
-	private void addExecutionSpeedVariable() throws GRBException {
-		executionSpeed = model.addVar(-GRB.INFINITY, 0, parameters.getExecutionSpeedWeight(), GRB.CONTINUOUS, "execution_speed");
-		model.addConstr(executionSpeed, GRB.EQUAL, makeExecutionSpeedExpression(), "execution_speed");
-	}
-
-	/**
-	 * The sum of all the allocation variables of each
-	 * vertex equals 1. So each vertex is allocated once and
-	 * only once
-	 */
-	private void addTaskAllocationConstraint() throws  GRBException {
-		for (JobVertex vertex : vertices) {
-			String name = getVariableString("sum_allocated_partitions_", vertex);
-			GRBLinExpr lhs = new GRBLinExpr();
-			for (GeoLocation location : locations) {
-				lhs.addTerm(1d, placement.get(vertex, location));
-			}
-			model.addConstr(lhs, GRB.EQUAL, 1d, name);
-		}
-	}
-
-	/**
-	 * The number of vertices placed at each location does
-	 * not exceed the slots available there
-	 */
-	private void addSharingSlotOverflowConstraint() throws GRBException {
-		for (GeoLocation location : locations) {
-			for (JobVertex vertex : vertices) {
-				String name = getVariableString("allocated_subtasks_", vertex, location);
-				GRBQuadExpr lhs = new GRBQuadExpr();
-				lhs.addTerm(1d, placement.get(vertex, location), parallelism.get(vertex));
-				model.addQConstr(lhs, GRB.LESS_EQUAL, slots.get(location), name);
-			}
-		}
-	}
-
-	/**
-	 * The sum of all task vertices placed at each location does
-	 * not exceed the slots available there
-	 */
-	private void addNoSharingSlotOverflowConstraint() throws GRBException {
-		for (GeoLocation location : locations) {
-			String name = getVariableString("allocated_subtasks_", location);
-			GRBQuadExpr lhs = new GRBQuadExpr();
-			for (JobVertex vertex : vertices) {
-				lhs.addTerm(1d, placement.get(vertex, location), parallelism.get(vertex));
-			}
-			model.addQConstr(lhs, GRB.LESS_EQUAL, slots.get(location), name);
-		}
-	}
-
-	private String getVariableString(String variableName, Object... params) {
-		StringBuilder out = new StringBuilder(variableName);
-		for (Object param : params) {
-			out.append("_");
-			if (param.toString().length() >= 100) {
-				out.append(param.toString(), 0, 100);
-			} else {
-				out.append(param.toString());
-			}
-
-		}
-		return out.toString();
-	}
-
-	/**
-	 * max parallelism is -1f for unbounded values. changing to GRB.Infinity to solve the model
-	 */
-	private double getMaxParallelism(JobVertex vertex) {
-		double maxParallelism = vertex.getMaxParallelism();
-		if(maxParallelism <= 0) {
-			maxParallelism = vertex.getParallelism();
-		}
-		return maxParallelism;
-	}
-
-	private GRBQuadExpr makeNetworkCostExpression() {
-		GRBQuadExpr expr = new GRBQuadExpr();
-
-		for (JobVertex vertex : vertices) {
-			if (!vertex.isInputVertex()) {
-				for (JobEdge jobEdge : vertex.getInputs()) {
-					//for all the edges
-					for (GeoLocation locationFrom: locations) {
-						for (GeoLocation locationTo : locations) {
-							//add to the network cost the edge, if source and destinations are not placed in the same site
-							if(!locationFrom.equals(locationTo)) {
-								double bandwidth;
-								if(bandwidthProvider.hasBandwidth(locationFrom, locationTo)) {
-									bandwidth = bandwidthProvider.getBandwidth(locationFrom, locationTo);
-								} else {
-									bandwidth = 1;
-								}
-								expr.addTerm((1 / bandwidth) * jobEdge.getWeight(), placement.get(vertex, locationTo), placement.get(jobEdge.getSource().getProducer(), locationFrom));
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return expr;
-	}
-
-	private GRBLinExpr makeExecutionSpeedExpression() {
-		GRBLinExpr expr = new GRBLinExpr();
-		for (JobVertex vertex : vertices) {
-			expr.addTerm(- vertex.getWeight(), parallelism.get(vertex));
-		}
-		return expr;
-	}
+	public abstract void init() throws GRBException;
 
 	public OptimisationModelSolution optimize() throws GRBException {
 		model.optimize();
@@ -276,5 +124,30 @@ public class OptimisationModel {
 
 	public boolean isSolved() throws GRBException {
 		return GRBUtils.isSolved(this.model);
+	}
+
+	/**
+	 * max parallelism is -1f for unbounded values. changing to GRB.Infinity to solve the model
+	 */
+	protected double getMaxParallelism(JobVertex vertex) {
+		double maxParallelism = vertex.getMaxParallelism();
+		if(maxParallelism <= 0) {
+			maxParallelism = vertex.getParallelism();
+		}
+		return maxParallelism;
+	}
+
+	protected String getVariableString(String variableName, Object... params) {
+		StringBuilder out = new StringBuilder(variableName);
+		for (Object param : params) {
+			out.append("_");
+			if (param.toString().length() >= 100) {
+				out.append(param.toString(), 0, 100);
+			} else {
+				out.append(param.toString());
+			}
+
+		}
+		return out.toString();
 	}
 }

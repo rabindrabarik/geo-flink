@@ -28,6 +28,7 @@ import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.blob.BlobClient;
 import org.apache.flink.runtime.blob.PermanentBlobKey;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
+import org.apache.flink.runtime.executiongraph.BasicOptimisationModel;
 import org.apache.flink.runtime.executiongraph.OptimisationModel;
 import org.apache.flink.runtime.executiongraph.OptimisationModelParameters;
 import org.apache.flink.runtime.executiongraph.OptimisationModelSolution;
@@ -403,7 +404,7 @@ public class JobGraph implements Serializable {
 		//creating and solving the model
 		OptimisationModel model;
 		try {
-			model = new OptimisationModel(
+			model = new BasicOptimisationModel(
 				this.getVerticesSortedTopologicallyFromSources(),
 				availableSlotsByGeoLocation.keySet(),
 				placedVertices,
