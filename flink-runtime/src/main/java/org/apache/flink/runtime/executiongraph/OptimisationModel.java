@@ -197,7 +197,32 @@ public abstract class OptimisationModel {
 
 	private void addNetworkCostVariable() throws GRBException {
 		networkCost = model.addVar(0, GRB.INFINITY, parameters.getNetworkCostWeight(), GRB.CONTINUOUS, "network_cost");
-		model.addQConstr(networkCost, GRB.EQUAL, makeNetworkCostExpression(), "network_cost");
+
+		double automaticNetworkCostWeight = maxExecutionTime() / maxNetworkCost();
+
+		GRBQuadExpr weightedNetworkCostExpression = new GRBQuadExpr();
+
+		weightedNetworkCostExpression.multAdd(automaticNetworkCostWeight, makeNetworkCostExpression());
+
+		model.addQConstr(networkCost, GRB.EQUAL, weightedNetworkCostExpression, "network_cost");
+	}
+
+	protected double maxExecutionTime() {
+		double out = 0;
+		for (JobVertex vertex : vertices) {
+			out += vertex.getWeight() * getMaxParallelism(vertex);
+		}
+		return out;
+	}
+
+	protected double maxNetworkCost() {
+		double out = 0;
+		for (JobVertex destination : vertices) {
+			for (JobEdge jobEdge : destination.getInputs()) {
+				out += jobEdge.getWeight() * locations.size();
+			}
+		}
+		return out;
 	}
 
 	private void addExecutionSpeedVariable() throws GRBException {
