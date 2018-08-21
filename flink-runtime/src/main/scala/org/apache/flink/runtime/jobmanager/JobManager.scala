@@ -1283,12 +1283,14 @@ class JobManager(
           case geoScheduler: FlinkGeoScheduler =>
             log.info("GeoScheduler available, initiating model solving")
 
-            var parameters = new OptimisationModelParameters()
-            parameters.setExecutionSpeedWeight(1 - flinkConfiguration.getDouble(OptimisationModelOptions.NETWORK_COST))
-            parameters.setNetworkCostWeight(flinkConfiguration.getDouble(OptimisationModelOptions.NETWORK_COST))
-            parameters.setSlotSharingEnabled(flinkConfiguration.getBoolean(OptimisationModelOptions.GEO_ENABLE_SLOT_SHARING))
+            if(jobGraph.getOptimisationModelParameters == null) {
+              var parameters = new OptimisationModelParameters()
+              parameters.setExecutionSpeedWeight(1 - flinkConfiguration.getDouble(OptimisationModelOptions.NETWORK_COST))
+              parameters.setNetworkCostWeight(flinkConfiguration.getDouble(OptimisationModelOptions.NETWORK_COST))
+              parameters.setSlotSharingEnabled(flinkConfiguration.getBoolean(OptimisationModelOptions.GEO_ENABLE_SLOT_SHARING))
 
-            jobGraph.setOptimisationModelParameters(parameters)
+              jobGraph.setOptimisationModelParameters(parameters)
+            }
 
             jobGraph.solveOptimisationModel(geoScheduler.getBandwidthProvider, geoScheduler.calculateAvailableSlotsByGeoLocation)
           case _ =>

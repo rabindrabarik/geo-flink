@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -132,21 +133,24 @@ public class GeoScheduler extends Scheduler {
 
 		JobVertex jobVertex = task.getTaskToExecute().getVertex().getJobVertex().getJobVertex();
 
-		GeoLocation whereToPlace = solution.getPlacement(jobVertex);
+		List<GeoLocation> whereToPlace = solution.getPlacement(jobVertex);
 
 		if(whereToPlace == null) {
 			throw new IllegalArgumentException("The placement for this job vertex was not found. This should never happen");
 		}
 
-		if(!allInstancesByGeoLocation.containsKey(whereToPlace)) {
-			return FutureUtils.completedExceptionally(new NoResourceAvailableException("The geo location specified in " +
-				"the placement problem's solution is unknown to this scheduler"));
-		}
 
 		ArrayList<TaskManagerLocation> locationsToPlaceIn = new ArrayList<>();
 
-		for (Instance instance : allInstancesByGeoLocation.get(whereToPlace)) {
-			locationsToPlaceIn.add(instance.getTaskManagerLocation());
+		for(GeoLocation location : whereToPlace) {
+			if(!allInstancesByGeoLocation.containsKey(location)) {
+				return FutureUtils.completedExceptionally(new NoResourceAvailableException("The geo location specified in " +
+					"the placement problem's solution is unknown to this scheduler"));
+			}
+
+			for (Instance instance : allInstancesByGeoLocation.get(location)) {
+				locationsToPlaceIn.add(instance.getTaskManagerLocation());
+			}
 		}
 
 		SimpleSlot slotToUse = null;
@@ -164,16 +168,21 @@ public class GeoScheduler extends Scheduler {
 			}
 		}
 
-		if(slotToUse == null) {
+		if(slotToUse != null) {
+			if(!whereToPlace.contains(slotToUse.getTaskManagerLocation().getGeoLocation())) {
+				throw new RuntimeException("GeoScheduler is not respecting the allocation");
+			}
+			return CompletableFuture.completedFuture(slotToUse);
+		} else {
 			//we weren't able to schedule respecting the model solution, delegate to standard scheduler
 			LOG.info("GeoScheduler failure for vertex {}, delegating", jobVertex);
 			return super.allocateSlot(slotRequestId, task, allowQueued, slotProfile, allocationTimeout);
 		}
 
-		return CompletableFuture.completedFuture(slotToUse);
+
 	}
 
-	private SimpleSlot scheduleWithSlotSharing(ScheduledUnit task, GeoLocation whereToPlace, ArrayList<TaskManagerLocation> locationsToPlaceIn) {
+	private SimpleSlot scheduleWithSlotSharing(ScheduledUnit task, List<GeoLocation> whereToPlace, ArrayList<TaskManagerLocation> locationsToPlaceIn) {
 		JobVertex jobVertex = task.getTaskToExecute().getVertex().getJobVertex().getJobVertex();
 		SimpleSlot slotToUse = null;
 		SlotSharingGroupAssignment assignment = jobVertex.getSlotSharingGroup().getTaskAssignment();
@@ -182,7 +191,12 @@ public class GeoScheduler extends Scheduler {
 			// the assignment does not have any available slots, trying to add a new one to it
 			SharedSlot newSharedSlot = null;
 
-			Iterator<Instance> iterator = allInstancesByGeoLocation.get(whereToPlace).iterator();
+			Set<Instance> instances = new HashSet<>();
+
+			for (GeoLocation location : whereToPlace) {
+				instances.addAll(allInstancesByGeoLocation.get(location));
+			}
+			Iterator<Instance> iterator = instances.iterator();
 
 			while (iterator.hasNext() && newSharedSlot == null) {
 				Instance instance = iterator.next();

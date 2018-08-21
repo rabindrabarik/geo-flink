@@ -9,17 +9,19 @@ import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.util.GRBUtils;
 import org.apache.flink.types.TwoKeysMap;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class OptimisationModelSolution {
-	private Map<JobVertex, GeoLocation> placement;
+	private Map<JobVertex, List<GeoLocation>> placement;
 	private Map<JobVertex, Integer> parallelism;
 	private double networkCost;
 	private double executionSpeed;
 	private double modelExecutionTime;
 
-	public OptimisationModelSolution(Map<JobVertex, GeoLocation> placement, Map<JobVertex, Integer> parallelism, double networkCost, double executionSpeed, double modelExecutionTime) {
+	public OptimisationModelSolution(Map<JobVertex, List<GeoLocation>> placement, Map<JobVertex, Integer> parallelism, double networkCost, double executionSpeed, double modelExecutionTime) {
 		this.placement = placement;
 		this.networkCost = networkCost;
 		this.executionSpeed = executionSpeed;
@@ -32,17 +34,18 @@ public class OptimisationModelSolution {
 			return null;
 		}
 
-		Map<JobVertex, GeoLocation> placement = makePlacementMap(placementVarMap);
+		Map<JobVertex, List<GeoLocation>> placement = makePlacementMap(placementVarMap);
 		Map<JobVertex, Integer> parallelism = makeParallelismMap(parallelismVarMap);
 
 		return new OptimisationModelSolution(placement, parallelism, networkCost.get(GRB.DoubleAttr.X), executionTime.get(GRB.DoubleAttr.X), solvedModel.get(GRB.DoubleAttr.Runtime));
 	}
 
-	private static Map<JobVertex, GeoLocation> makePlacementMap(TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap) throws GRBException {
-		Map<JobVertex, GeoLocation> placement = new HashMap<>();
+	private static Map<JobVertex, List<GeoLocation>> makePlacementMap(TwoKeysMap<JobVertex, GeoLocation, GRBVar> placementVarMap) throws GRBException {
+		Map<JobVertex, List<GeoLocation>> placement = new HashMap<>();
 		for (TwoKeysMap.Entry<JobVertex, GeoLocation, GRBVar> placementVarEntry : placementVarMap.entrySet()) {
 			if (placementVarEntry.getValue().get(GRB.DoubleAttr.X) == 1d) {
-				placement.put(placementVarEntry.getKey1(), placementVarEntry.getKey2());
+				placement.putIfAbsent(placementVarEntry.getKey1(), new ArrayList<>());
+				placement.get(placementVarEntry.getKey1()).add(placementVarEntry.getKey2());
 			}
 		}
 		return placement;
@@ -56,7 +59,7 @@ public class OptimisationModelSolution {
 		return parallelism;
 	}
 
-	public Map<JobVertex, GeoLocation> getPlacementMap() {
+	public Map<JobVertex, List<GeoLocation>> getPlacementMap() {
 		return placement;
 	}
 
@@ -64,7 +67,7 @@ public class OptimisationModelSolution {
 		return parallelism;
 	}
 
-	public GeoLocation getPlacement(JobVertex vertex) {return placement.get(vertex);}
+	public List<GeoLocation> getPlacement(JobVertex vertex) {return placement.get(vertex);}
 
 	public Integer getParallelism(JobVertex vertex) {return parallelism.get(vertex);}
 
@@ -90,9 +93,9 @@ public class OptimisationModelSolution {
 		out.append("\n\n PARALLELISM:");
 		out.append(GRBUtils.mapToString(parallelism));
 
-		out.append("\n\n Model execution time: " + modelExecutionTime);
-		out.append("\n\n Streaming app network cost: " + networkCost);
-		out.append("\n\n Streaming app execution speed: " + executionSpeed);
+		out.append("\n\n Model execution time: ").append(modelExecutionTime);
+		out.append("\n\n Streaming app network cost: ").append(networkCost);
+		out.append("\n\n Streaming app execution speed: ").append(executionSpeed).append("\n\n");
 
 		return out.toString();
 	}

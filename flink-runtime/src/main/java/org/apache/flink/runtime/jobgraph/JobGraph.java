@@ -28,7 +28,7 @@ import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.blob.BlobClient;
 import org.apache.flink.runtime.blob.PermanentBlobKey;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
-import org.apache.flink.runtime.executiongraph.BasicOptimisationModel;
+import org.apache.flink.runtime.executiongraph.MultiLocationOptimisationModel;
 import org.apache.flink.runtime.executiongraph.OptimisationModel;
 import org.apache.flink.runtime.executiongraph.OptimisationModelParameters;
 import org.apache.flink.runtime.executiongraph.OptimisationModelSolution;
@@ -98,7 +98,7 @@ public class JobGraph implements Serializable {
 	/** The mode in which the job is scheduled */
 	private ScheduleMode scheduleMode = ScheduleMode.LAZY_FROM_SOURCES;
 
-	private OptimisationModelParameters optimisationModelParameters = OptimisationModelParameters.defaultParameters();
+	private OptimisationModelParameters optimisationModelParameters = null;
 
 	// --- checkpointing ---
 
@@ -404,7 +404,7 @@ public class JobGraph implements Serializable {
 		//creating and solving the model
 		OptimisationModel model;
 		try {
-			model = new BasicOptimisationModel(
+			model = new MultiLocationOptimisationModel(
 				this.getVerticesSortedTopologicallyFromSources(),
 				availableSlotsByGeoLocation.keySet(),
 				placedVertices,
@@ -443,23 +443,15 @@ public class JobGraph implements Serializable {
 	}
 
 	private void setSlotSharing(Set<GeoLocation> locations) {
-		if(this.solution == null) {
+		if (this.solution == null) {
 			LOG.warn("You shouldn't be calling this before solving the model");
 		}
 
-		if(locations == null || locations.isEmpty()) {
-			throw new IllegalArgumentException("Locations set cannot be empty or null");
-		}
-
-		Map<GeoLocation, SlotSharingGroup> groups = new HashMap<>();
-
-		for (GeoLocation location : locations) {
-			groups.put(location, new SlotSharingGroup());
-
-		}
+		SlotSharingGroup group = new SlotSharingGroup();
 
 		for (JobVertex jobVertex : this.getVertices()) {
-			jobVertex.setSlotSharingGroup(groups.get(solution.getPlacement(jobVertex)));
+			jobVertex.setSlotSharingGroup(group);
+
 		}
 	}
 
@@ -519,6 +511,14 @@ public class JobGraph implements Serializable {
 	 * */
 	public void setOptimisationModelParameters(OptimisationModelParameters parameters) {
 		this.optimisationModelParameters = parameters;
+	}
+
+
+	/**
+	 * @return the parameters that will be used to solve the model for this graph.
+	 * */
+	public OptimisationModelParameters getOptimisationModelParameters() {
+		return optimisationModelParameters;
 	}
 
 	/**

@@ -19,12 +19,6 @@ public class BasicOptimisationModel extends OptimisationModel {
 	}
 
 	public void init() throws GRBException{
-		addPlacementVariables();
-		addParallelismVariables();
-
-		addNetworkCostVariable();
-		addExecutionSpeedVariable();
-
 		addTaskAllocationConstraint();
 
 		if(parameters.isSlotSharingEnabled()) {
@@ -32,41 +26,6 @@ public class BasicOptimisationModel extends OptimisationModel {
 		} else {
 			addNoSharingSlotOverflowConstraint();
 		}
-	}
-
-	private void addPlacementVariables() throws GRBException {
-		for (JobVertex jv : vertices) {
-			boolean isPlaced = placedVertices.containsKey(jv);
-			for (GeoLocation gl : locations) {
-				if (isPlaced) {
-					//placed vertices' placement variables are static: 1 or 0
-					if (placedVertices.get(jv).equals(gl)) {
-						placement.put(jv, gl, model.addVar(1, 1, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
-					} else {
-						placement.put(jv, gl, model.addVar(0, 0, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
-					}
-				} else {
-					//non-placed vertices' placement variables are free
-					placement.put(jv, gl, model.addVar(0, 1, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
-				}
-			}
-		}
-	}
-
-	private void addParallelismVariables() throws GRBException {
-		for (JobVertex jv : vertices) {
-			parallelism.put(jv, model.addVar(1d, getMaxParallelism(jv), 0.0, GRB.INTEGER, getVariableString("placement",jv)));
-		}
-	}
-
-	private void addNetworkCostVariable() throws GRBException {
-		networkCost = model.addVar(0, GRB.INFINITY, parameters.getNetworkCostWeight(), GRB.CONTINUOUS, "network_cost");
-		model.addQConstr(networkCost, GRB.EQUAL, makeNetworkCostExpression(), "network_cost");
-	}
-
-	private void addExecutionSpeedVariable() throws GRBException {
-		executionSpeed = model.addVar(-GRB.INFINITY, 0, parameters.getExecutionSpeedWeight(), GRB.CONTINUOUS, "execution_speed");
-		model.addConstr(executionSpeed, GRB.EQUAL, makeExecutionSpeedExpression(), "execution_speed");
 	}
 
 	/**
@@ -115,7 +74,8 @@ public class BasicOptimisationModel extends OptimisationModel {
 		}
 	}
 
-	private GRBQuadExpr makeNetworkCostExpression() {
+	@Override
+	protected GRBQuadExpr makeNetworkCostExpression() {
 		GRBQuadExpr expr = new GRBQuadExpr();
 
 		for (JobVertex vertex : vertices) {
@@ -143,7 +103,8 @@ public class BasicOptimisationModel extends OptimisationModel {
 		return expr;
 	}
 
-	private GRBLinExpr makeExecutionSpeedExpression() {
+	@Override
+	protected GRBLinExpr makeExecutionSpeedExpression() {
 		GRBLinExpr expr = new GRBLinExpr();
 		for (JobVertex vertex : vertices) {
 			expr.addTerm(- vertex.getWeight(), parallelism.get(vertex));

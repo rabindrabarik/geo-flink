@@ -3,6 +3,7 @@ package org.apache.flink.runtime.executiongraph;
 import gurobi.GRB;
 import gurobi.GRBEnv;
 import gurobi.GRBException;
+import gurobi.GRBExpr;
 import gurobi.GRBLinExpr;
 import gurobi.GRBModel;
 import gurobi.GRBQuadExpr;
@@ -45,6 +46,16 @@ public abstract class OptimisationModel {
 	// Weights //
 	protected OptimisationModelParameters parameters;
 
+	/**
+	 * This constructor:
+	 * <ul>
+	 *     <li>Creates the model</li>
+	 *     <li>Initialises vertices, locations, placedVertices, bandwidthProvider, slots and parameters</li>
+	 *     <li>Creates variables for placement and splitting</li>
+	 *     <li>Creates the variables for network cost and execution speed as specified in the {@link #addNetworkCostVariable()} and {@link #addExecutionSpeedVariable()} abstract methods</li>
+	 * </ul>
+	 * All the rest is left to implementers.
+	 * */
 	public OptimisationModel(Collection<JobVertex> vertices,
 							 Set<GeoLocation> locations,
 							 Map<JobVertex, GeoLocation> placedVertices,
@@ -75,10 +86,68 @@ public abstract class OptimisationModel {
 
 		model.set(GRB.DoubleParam.TimeLimit, this.parameters.getTimeForEachTaskBeforeHeuristicSolution() * vertices.size());
 
+		addPlacementVariables();
+
+		addParallelismVariables();
+
+		addNetworkCostVariable();
+
+		addExecutionSpeedVariable();
+
 		init();
 	}
 
+	protected void addPlacementVariables() throws GRBException {
+		for (JobVertex jv : vertices) {
+			boolean isPlaced = placedVertices.containsKey(jv);
+			for (GeoLocation gl : locations) {
+				if (isPlaced) {
+					//placed vertices' placement variables are static: 1 or 0
+					if (placedVertices.get(jv).equals(gl)) {
+						placement.put(jv, gl, model.addVar(1, 1, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
+					} else {
+						placement.put(jv, gl, model.addVar(0, 0, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
+					}
+				} else {
+					//non-placed vertices' placement variables are free
+					placement.put(jv, gl, model.addVar(0, 1, 0.0, GRB.BINARY, getVariableString("placement",jv, gl)));
+				}
+			}
+		}
+	}
+
+	protected void addParallelismVariables() throws GRBException {
+		for (JobVertex jv : vertices) {
+			parallelism.put(jv, model.addVar(1d, getMaxParallelism(jv), 0.0, GRB.INTEGER, getVariableString("placement",jv)));
+		}
+	}
+
 	public abstract void init() throws GRBException;
+
+	protected String getVariableString(String variableName, Object... params) {
+		StringBuilder out = new StringBuilder(variableName);
+		for (Object param : params) {
+			out.append("_");
+			if (param.toString().length() >= 100) {
+				out.append(param.toString(), 0, 100);
+			} else {
+				out.append(param.toString());
+			}
+
+		}
+		return out.toString();
+	}
+
+	/**
+	 * max parallelism is -1f for unbounded values. changing to GRB.Infinity to solve the model
+	 */
+	protected double getMaxParallelism(JobVertex vertex) {
+		double maxParallelism = vertex.getMaxParallelism();
+		if(maxParallelism <= 0) {
+			maxParallelism = vertex.getParallelism();
+		}
+		return maxParallelism;
+	}
 
 	public OptimisationModelSolution optimize() throws GRBException {
 		model.optimize();
@@ -126,28 +195,17 @@ public abstract class OptimisationModel {
 		return GRBUtils.isSolved(this.model);
 	}
 
-	/**
-	 * max parallelism is -1f for unbounded values. changing to GRB.Infinity to solve the model
-	 */
-	protected double getMaxParallelism(JobVertex vertex) {
-		double maxParallelism = vertex.getMaxParallelism();
-		if(maxParallelism <= 0) {
-			maxParallelism = vertex.getParallelism();
-		}
-		return maxParallelism;
+	private void addNetworkCostVariable() throws GRBException {
+		networkCost = model.addVar(0, GRB.INFINITY, parameters.getNetworkCostWeight(), GRB.CONTINUOUS, "network_cost");
+		model.addQConstr(networkCost, GRB.EQUAL, makeNetworkCostExpression(), "network_cost");
 	}
 
-	protected String getVariableString(String variableName, Object... params) {
-		StringBuilder out = new StringBuilder(variableName);
-		for (Object param : params) {
-			out.append("_");
-			if (param.toString().length() >= 100) {
-				out.append(param.toString(), 0, 100);
-			} else {
-				out.append(param.toString());
-			}
-
-		}
-		return out.toString();
+	private void addExecutionSpeedVariable() throws GRBException {
+		executionSpeed = model.addVar(-GRB.INFINITY, 0, parameters.getExecutionSpeedWeight(), GRB.CONTINUOUS, "execution_speed");
+		model.addConstr(executionSpeed, GRB.EQUAL, makeExecutionSpeedExpression(), "execution_speed");
 	}
+
+	protected abstract GRBQuadExpr makeNetworkCostExpression() throws GRBException;
+
+	protected abstract GRBLinExpr makeExecutionSpeedExpression() throws GRBException;
 }
