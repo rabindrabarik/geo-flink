@@ -69,6 +69,12 @@ public class SimpleJobGraph extends TestJobGraph {
 			vertex.setInvokableClass(VoidInvokable.class);
 		}
 
+		reduce.setSelectivity(1);
+
+		for (JobVertex map : inputs) {
+			map.setSelectivity(1);
+		}
+
 		for (JobVertex map : maps) {
 			map.setSelectivity(0.5);
 		}

@@ -2,6 +2,8 @@ package testingFrameworks;
 
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
+import org.apache.flink.runtime.executiongraph.ExecutionGraphBuilder;
+import org.apache.flink.runtime.executiongraph.OptimisationModelParameters;
 import org.apache.flink.runtime.instance.Instance;
 import org.apache.flink.runtime.jobgraph.JobVertex;
 import org.apache.flink.runtime.jobgraph.ScheduleMode;
@@ -92,6 +94,9 @@ public abstract class JobGraphSchedulingTestFramework extends TestLogger {
 		for (Instance i : instanceSet().getInstances()) {
 			scheduler.newInstanceAvailable(i);
 		}
+
+		jobGraph().getJobGraph().setOptimisationModelParameters(new OptimisationModelParameters(0.5, 0.5, 10, true));
+
 
 		spy = new SchedulingDecisionSpy();
 		spy.addPlacedVertices(placedVertices());

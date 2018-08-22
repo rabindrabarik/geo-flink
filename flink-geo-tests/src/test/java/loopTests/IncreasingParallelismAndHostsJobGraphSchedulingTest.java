@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
-	private final static int NUM_TESTS = 200;
+	private final static int NUM_TESTS = 150;
 
 	private static int initialMaxParallelism = 4;
 

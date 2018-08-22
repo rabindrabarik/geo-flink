@@ -77,7 +77,7 @@ public class GrandChallengeBenchmarkTest extends DataStreamSchedulingTestFramewo
         final TestStreamEnvironment env = (TestStreamEnvironment) StreamExecutionEnvironment.getExecutionEnvironment();
 
         env.getModelParameters().setSlotSharingEnabled(true);
-        env.getModelParameters().setNetworkCostWeight(1);
+        env.getModelParameters().setNetworkCostWeight(0.5);
 
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
