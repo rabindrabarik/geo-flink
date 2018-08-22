@@ -164,7 +164,7 @@ public class GeoScheduler extends Scheduler {
 			//still null, so we didn't find a shared slot, find another slot
 			slotToUse = super.getFreeSlotForTask(task.getTaskToExecute().getVertex(), locationsToPlaceIn, true);
 			if(slotToUse != null) {
-				LOG.info("Scheduled vertex {} without slot sharing at slot {}", jobVertex, slotToUse);
+				LOG.info("Scheduled vertex {} without slot sharing at slot {}", task, slotToUse);
 			}
 		}
 
@@ -175,7 +175,7 @@ public class GeoScheduler extends Scheduler {
 			return CompletableFuture.completedFuture(slotToUse);
 		} else {
 			//we weren't able to schedule respecting the model solution, delegate to standard scheduler
-			LOG.info("GeoScheduler failure for vertex {}, delegating", jobVertex);
+			LOG.info("GeoScheduler failure for vertex {}, delegating", task);
 			return super.allocateSlot(slotRequestId, task, allowQueued, slotProfile, allocationTimeout);
 		}
 
@@ -187,7 +187,8 @@ public class GeoScheduler extends Scheduler {
 		SimpleSlot slotToUse = null;
 		SlotSharingGroupAssignment assignment = jobVertex.getSlotSharingGroup().getTaskAssignment();
 
-		if(assignment.getNumberOfAvailableSlotsForGroup(jobVertex.getID()) == 0) {
+
+		if(assignment.getNumberOfAvailableSlotsForGroupAtLocations(jobVertex.getID(), whereToPlace) == 0) {
 			// the assignment does not have any available slots, trying to add a new one to it
 			SharedSlot newSharedSlot = null;
 
@@ -213,9 +214,9 @@ public class GeoScheduler extends Scheduler {
 		}
 
 		if(slotToUse == null) {
-			slotToUse = super.getSlotFromGroup(locationsToPlaceIn, task.getTaskToExecute().getVertex(), assignment, null);
+			slotToUse = assignment.getLocalSlotForTask(task.getJobVertexId(), locationsToPlaceIn);
 		} else {
-			LOG.info("Scheduled vertex {} using slot sharing at slot {}", jobVertex, slotToUse);
+			LOG.info("Scheduled vertex {} using slot sharing at slot {}", task, slotToUse);
 		}
 		return slotToUse;
 	}

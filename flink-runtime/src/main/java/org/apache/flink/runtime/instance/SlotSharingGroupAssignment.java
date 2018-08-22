@@ -19,6 +19,7 @@
 package org.apache.flink.runtime.instance;
 
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.clusterframework.types.ResourceID;
 import org.apache.flink.runtime.executiongraph.ExecutionVertex;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
@@ -32,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -113,6 +115,46 @@ public class SlotSharingGroupAssignment {
 	 */
 	public int getNumberOfSlots() {
 		return allSlots.size();
+	}
+
+	/**
+	 * Gets the number of shared slots into which the given group can place subtasks or
+	 * nested task groups in the given locations.
+	 *
+	 * @param groupId The ID of the group.
+	 * @param locations The locations to search on
+	 * @return The number of shared slots available to the given job vertex.
+	 */
+	public int getNumberOfAvailableSlotsForGroupAtLocations(AbstractID groupId, Collection<GeoLocation> locations) {
+		synchronized (lock) {
+			Map<ResourceID, List<SharedSlot>> available = availableSlotsPerJid.get(groupId);
+
+			if (available != null) {
+				Set<SharedSlot> set = new HashSet<SharedSlot>();
+
+				for (List<SharedSlot> list : available.values()) {
+					for (SharedSlot slot : list) {
+						if(locations.contains(slot.getTaskManagerLocation().getGeoLocation())) {
+							set.add(slot);
+						}
+					}
+				}
+
+				return set.size();
+			}
+			else {
+				// if no entry exists for a JobVertexID so far, then the vertex with that ID can
+				// add a subtask into each shared slot of this group. Consequently, all
+				// of them are available for that JobVertexID.
+				int availableCount = 0;
+				for (SharedSlot slot : allSlots) {
+					if(locations.contains(slot.getTaskManagerLocation().getGeoLocation())) {
+						availableCount ++;
+					}
+				}
+				return availableCount;
+			}
+		}
 	}
 
 	/**
@@ -275,6 +317,32 @@ public class SlotSharingGroupAssignment {
 	public SimpleSlot getSlotForTask(JobVertexID vertexID, Iterable<TaskManagerLocation> locationPreferences) {
 		synchronized (lock) {
 			Tuple2<SharedSlot, Locality> p = getSharedSlotForTask(vertexID, locationPreferences, false);
+
+			if (p != null) {
+				SharedSlot ss = p.f0;
+				SimpleSlot slot = ss.allocateSubSlot(vertexID);
+				slot.setLocality(p.f1);
+				return slot;
+			}
+			else {
+				return null;
+			}
+		}
+	}
+
+	/**
+	 * Gets a slot suitable for the given task vertex, exclusively on the preferred locations.
+	 * The method returns null, when this sharing group has no slot is available for the given JobVertexID
+	 * or no local slot can be found.
+	 *
+	 * @param vertexID the vertex id
+	 * @param locationPreferences location preferences
+	 *
+	 * @return A slot to execute the given ExecutionVertex in, or null, if none is available.
+	 */
+	public SimpleSlot getLocalSlotForTask(JobVertexID vertexID, Iterable<TaskManagerLocation> locationPreferences) {
+		synchronized (lock) {
+			Tuple2<SharedSlot, Locality> p = getSharedSlotForTask(vertexID, locationPreferences, true);
 
 			if (p != null) {
 				SharedSlot ss = p.f0;
