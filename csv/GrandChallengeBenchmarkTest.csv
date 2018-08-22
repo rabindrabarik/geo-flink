@@ -36,3 +36,14 @@ networkCost,executionSpeed,schedulerClassName,jobGraphCalssName,instanceSetClass
 0.0,22.0,SpyableGeoScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",2
 1.055555555555554,46.0,SpyableGeoScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",3
 3.3333333333332864,58.0,SpyableFlinkScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",0
+-1.0,58.0,SpyableGeoScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",1
+3.3333333333332864,58.0,SpyableFlinkScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",0
+-1.0,58.0,SpyableGeoScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",1
+-1.0,58.0,SpyableGeoScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",2
+3.3333333333332864,58.0,SpyableFlinkScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",0
+-1.0,58.0,SpyableGeoScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",2
+3.3333333333332864,58.0,SpyableFlinkScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",0
+-1.0,58.0,SpyableGeoScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",2
+3.3333333333332864,58.0,SpyableFlinkScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",0
+2.3888888888888684,58.0,SpyableGeoScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",2
+3.3333333333332864,58.0,SpyableFlinkScheduler,windowJoin,"DistributedDeploymentsGeoLocationAndBandwidths(3,6,0.2)",0

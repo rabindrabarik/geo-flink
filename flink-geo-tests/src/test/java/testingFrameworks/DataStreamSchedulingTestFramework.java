@@ -52,14 +52,29 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 		});
 	}
 
-	public static Configuration makeLocationSlotConfiguration(Map<GeoLocation, Integer> geoLocationSlotMap) {
+	public Configuration makeLocationSlotConfiguration(Map<GeoLocation, Integer> geoLocationSlotMap) {
 		Configuration configuration = new Configuration();
 		int taskManagerIndex = 0;
+		int totalSlots = 0;
 		for (Map.Entry<GeoLocation, Integer> locationAndSlots : geoLocationSlotMap.entrySet()) {
-			configuration.setInteger(GeoSchedulerTestingUtilsOptions.slotsForTaskManagerAtIndex(taskManagerIndex), locationAndSlots.getValue());
+			int taskManager1Slots = locationAndSlots.getValue() / 2;
+			int taskManager2Slots = locationAndSlots.getValue() - taskManager1Slots;
+
+			configuration.setInteger(GeoSchedulerTestingUtilsOptions.slotsForTaskManagerAtIndex(taskManagerIndex), taskManager1Slots);
 			configuration.setString(GeoSchedulerTestingUtilsOptions.geoLocationForTaskManagerAtIndex(taskManagerIndex), locationAndSlots.getKey().getKey());
 			taskManagerIndex++;
+			totalSlots += taskManager1Slots;
+
+			if(taskManager2Slots > 0) {
+				configuration.setInteger(GeoSchedulerTestingUtilsOptions.slotsForTaskManagerAtIndex(taskManagerIndex), taskManager2Slots);
+				configuration.setString(GeoSchedulerTestingUtilsOptions.geoLocationForTaskManagerAtIndex(taskManagerIndex), locationAndSlots.getKey().getKey());
+				taskManagerIndex++;
+				totalSlots += taskManager2Slots;
+			}
+
 		}
+		this.numberSlotsPerTaskManager = totalSlots / taskManagerIndex;
+		this.numberTaskManagers = taskManagerIndex;
 		return configuration;
 	}
 
@@ -81,22 +96,6 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 		 } else if (scheduler instanceof  SpyableFlinkScheduler) {
 			 ((SpyableFlinkScheduler) scheduler).setBandwidthProvider(new StaticBandwidthProvider(getTestGeoLocationAndBandwidths().getBandwidths()));
 		 }
-
-		this.numberSlotsPerTaskManager = getSlotAverage(getTestGeoLocationAndBandwidths().getGeoLocationSlotMap());
-		this.numberTaskManagers = getTestGeoLocationAndBandwidths().getGeoLocationSlotMap().isEmpty() ? 1 : getTestGeoLocationAndBandwidths().getGeoLocationSlotMap().size();
-	}
-
-	private int getSlotAverage(Map<GeoLocation, Integer> geoLocationSlotMap) {
-		int sum = 0;
-
-		if(geoLocationSlotMap.isEmpty()) {
-			return 1;
-		}
-
-		for (Integer slots : geoLocationSlotMap.values()) {
-			sum += slots;
-		}
-		return sum / geoLocationSlotMap.size();
 	}
 
 	/**
