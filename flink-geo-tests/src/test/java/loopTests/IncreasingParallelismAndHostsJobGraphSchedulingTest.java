@@ -14,20 +14,16 @@ import java.util.Collection;
 public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
 	private final static int NUM_TESTS = 150;
 
-	private static int initialMaxParallelism = 4;
-
 	private static int initialEdgeClouds = 4;
 	private static int[] edgeCloudsIncrement = {1, 5};
 
 	private static int initialCentralSlots = 4;
-	private static int[] centralSlotsIncrement = {5, 10};
 
 	private static int initialEachEdgeSlots = 4;
-	private static int[] eachEdgeSlotsIncrement = {1, 20};
 
 	private static int initialMapTasks = 4;
 
-	@Parameterized.Parameters(name = " geoScheduling?: {0} edgeClouds: {1} centralSlots: {2} eachEdgeSlots: {3} maxParallelism: {4}")
+	@Parameterized.Parameters(name = " geoScheduling?: {0} edgeClouds: {1} parallelism: {2} ")
 	public static Collection<Object[]> data() {
 		Collection<Object[]> data = new ArrayList<>();
 
@@ -35,25 +31,25 @@ public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGrap
 			int hundredsIndex = test / 100;
 			int index = test - hundredsIndex * 100;
 
-			Object[] params = new Object[5];
+			Object[] params = new Object[3];
 
 			params[0] = true;
 			params[1] = initialEdgeClouds + index * edgeCloudsIncrement[hundredsIndex];
-			params[2] = initialCentralSlots + index * centralSlotsIncrement[hundredsIndex];
-			params[3] = initialEachEdgeSlots + index * eachEdgeSlotsIncrement[hundredsIndex];
-			params[4] = initialMaxParallelism + index * ((int) params[1] * edgeCloudsIncrement[test / 100] + ((int) params[1] + edgeCloudsIncrement[test / 100]));
+			params[2] = ((int) params[1] * initialEachEdgeSlots + initialCentralSlots) / initialMapTasks;
 
 			data.add(params);
 
-			params = new Object[5];
+			params = new Object[3];
 
 			params[0] = false;
 			params[1] = initialEdgeClouds + index * edgeCloudsIncrement[hundredsIndex];
-			params[2] = initialCentralSlots + index * centralSlotsIncrement[hundredsIndex];
-			params[3] = initialEachEdgeSlots + index * eachEdgeSlotsIncrement[hundredsIndex];
-			params[4] = initialMaxParallelism + index * ((int) params[1] * edgeCloudsIncrement[test / 100] + ((int) params[1] + edgeCloudsIncrement[test / 100]));
+			params[2] = ((int) params[1] * initialEachEdgeSlots + initialCentralSlots) / initialMapTasks;
 
 			data.add(params);
+
+			if((test + 1) % 100 == 0) {
+				initialEdgeClouds = (int) params[1];
+			}
 		}
 
 		return data;
@@ -63,13 +59,8 @@ public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGrap
 	public int edgeClouds;
 
 	@Parameterized.Parameter(2)
-	public int centralSlots;
-
-	@Parameterized.Parameter(3)
-	public int eachEdgeSlots;
-
-	@Parameterized.Parameter(4)
 	public int maxParallelism;
+
 
 
 	public CentralAndEdgeInstances instances;
@@ -79,8 +70,8 @@ public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGrap
 	@Override
 	@Before
 	public void setup() {
-		instances = new CentralAndEdgeInstances(edgeClouds, centralSlots, eachEdgeSlots);
-		jobGraph = new SimpleJobGraph(initialMapTasks, maxParallelism);
+		instances = new CentralAndEdgeInstances(edgeClouds, initialCentralSlots, initialEachEdgeSlots);
+		jobGraph = new SimpleJobGraph(initialMapTasks, maxParallelism < 1 ? 1 : maxParallelism);
 		super.setup();
 	}
 

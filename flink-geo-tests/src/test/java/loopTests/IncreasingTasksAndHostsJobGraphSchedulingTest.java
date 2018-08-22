@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class IncreasingTasksAndHostsJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
-	private final static int NUM_TESTS = 200;
+	private final static int NUM_TESTS = 150;
 
 	private static int initialEdgeClouds = 4;
 	private static int[] edgeCloudsIncrement = {1, 5};
@@ -51,7 +51,7 @@ public class IncreasingTasksAndHostsJobGraphSchedulingTest extends JobGraphSched
 			params[3] = initialEachEdgeSlots + index * eachEdgeSlotsIncrement[hundredsIndex];
 
 			//max map tasks calculated on slots
-			int maxMapTasks = ((int) params[1] * (int) params[3] + (int) params[2]) / 4;
+			int maxMapTasks = (int) ((int) params[1] * 1.5);
 
 			//map tasks increment (min 1)
 			int mapTasksIncrement = maxMapTasks / numberOfMapTasksIncrements;
@@ -123,7 +123,8 @@ public class IncreasingTasksAndHostsJobGraphSchedulingTest extends JobGraphSched
 	@Before
 	public void setup() {
 		instances = new CentralAndEdgeInstances(edgeClouds, centralSlots, eachEdgeSlots);
-		jobGraph = new SimpleJobGraph(mapTasks);
+		int parallelism = (edgeClouds * eachEdgeSlots + centralSlots) / mapTasks;
+		jobGraph = new SimpleJobGraph(mapTasks, parallelism);
 		super.setup();
 	}
 

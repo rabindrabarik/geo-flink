@@ -12,19 +12,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class IncreasingTasksAndSlotsJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
-	private final static int NUM_TESTS = 40;
+	private final static int NUM_TESTS = 150;
 
-	public static int initialEdgeClouds = 4;
-	private static int edgeCloudsIncrement = 0;
+	private static int initialEdgeClouds = 4;
 
-	private static int initialCentralSlots = 140;
-	private static int centralSlotsIncrement = 10;
+	private static int initialCentralSlots = 4;
+	private static int[] centralSlotsIncrement = {1, 5};
 
-	private static int initialEachEdgeSlots = 276;
-	private static int eachEdgeSlotsIncrement = 20;
+	private static int initialEachEdgeSlots = 4;
+	private static int[] eachEdgeSlotsIncrement = {2, 10};
 
-	private static int initialMapTasks = 468;
-	private static int mapTasksIncrement = 30;
+
+	private static int initialMapTasks = 4;
+	private static int[] mapTasksIncrement = {2,10};
 
 
 	@Parameterized.Parameters(name = " geoScheduling?: {0} edgeClouds: {1} centralSlots: {2} eachEdgeSlots: {3} mapTasks: {4}")
@@ -32,25 +32,34 @@ public class IncreasingTasksAndSlotsJobGraphSchedulingTest extends JobGraphSched
 		Collection<Object[]> data = new ArrayList<>();
 
 		for (int test = 0; test < NUM_TESTS; test++) {
+			int hundredsIndex = test / 100;
+			int index = test - hundredsIndex * 100;
+
 			Object[] params = new Object[5];
 
 			params[0] = true;
-			params[1] = initialEdgeClouds + test * edgeCloudsIncrement;
-			params[2] = initialCentralSlots + test * centralSlotsIncrement;
-			params[3] = initialEachEdgeSlots + test * eachEdgeSlotsIncrement;
-			params[4] = initialMapTasks + test * mapTasksIncrement;
+			params[1] = initialEdgeClouds;
+			params[2] = initialCentralSlots + index * centralSlotsIncrement[hundredsIndex];
+			params[3] = initialEachEdgeSlots + index * eachEdgeSlotsIncrement[hundredsIndex];
+			params[4] = initialMapTasks + index * mapTasksIncrement[hundredsIndex];
 
 			data.add(params);
 
 			params = new Object[5];
 
 			params[0] = false;
-			params[1] = initialEdgeClouds + test * edgeCloudsIncrement;
-			params[2] = initialCentralSlots + test * centralSlotsIncrement;
-			params[3] = initialEachEdgeSlots + test * eachEdgeSlotsIncrement;
-			params[4] = initialMapTasks + test * mapTasksIncrement;
+			params[1] = initialEdgeClouds;
+			params[2] = initialCentralSlots + index * centralSlotsIncrement[hundredsIndex];
+			params[3] = initialEachEdgeSlots + index * eachEdgeSlotsIncrement[hundredsIndex];
+			params[4] = initialMapTasks + index * mapTasksIncrement[hundredsIndex];
 
 			data.add(params);
+
+			if((test + 1) % 100 == 0) {
+				initialCentralSlots = (int) params[2];
+				initialEachEdgeSlots = (int) params[3];
+				initialMapTasks = (int) params[4];
+			}
 		}
 
 		return data;
@@ -76,7 +85,8 @@ public class IncreasingTasksAndSlotsJobGraphSchedulingTest extends JobGraphSched
 	@Before
 	public void setup() {
 		instances = new CentralAndEdgeInstances(edgeClouds, centralSlots, eachEdgeSlots);
-		jobGraph = new SimpleJobGraph(mapTasks);
+		int parallelism = (edgeClouds * eachEdgeSlots + centralSlots) / mapTasks;
+		jobGraph = new SimpleJobGraph(mapTasks, parallelism);
 		super.setup();
 	}
 
