@@ -12,10 +12,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
-	private final static int NUM_TESTS = 150;
+	private final static int MAX_EDGE_CLOUDS = 700;
 
 	private static int initialEdgeClouds = 4;
-	private static int[] edgeCloudsIncrement = {1, 5};
+	private static int edgeCloudsIncrement = 5;
 
 	private static int initialCentralSlots = 4;
 
@@ -27,29 +27,15 @@ public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGrap
 	public static Collection<Object[]> data() {
 		Collection<Object[]> data = new ArrayList<>();
 
-		for (int test = 0; test < NUM_TESTS; test++) {
-			int hundredsIndex = test / 100;
-			int index = test - hundredsIndex * 100;
+		for (int test = 0; test < MAX_EDGE_CLOUDS / edgeCloudsIncrement; test++) {
 
 			Object[] params = new Object[3];
 
 			params[0] = true;
-			params[1] = initialEdgeClouds + index * edgeCloudsIncrement[hundredsIndex];
+			params[1] = initialEdgeClouds + test * edgeCloudsIncrement;
 			params[2] = ((int) params[1] * initialEachEdgeSlots + initialCentralSlots) / initialMapTasks;
 
 			data.add(params);
-
-			params = new Object[3];
-
-			params[0] = false;
-			params[1] = initialEdgeClouds + index * edgeCloudsIncrement[hundredsIndex];
-			params[2] = ((int) params[1] * initialEachEdgeSlots + initialCentralSlots) / initialMapTasks;
-
-			data.add(params);
-
-			if((test + 1) % 100 == 0) {
-				initialEdgeClouds = (int) params[1];
-			}
 		}
 
 		return data;
