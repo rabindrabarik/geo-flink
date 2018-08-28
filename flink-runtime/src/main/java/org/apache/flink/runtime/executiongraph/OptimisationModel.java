@@ -58,7 +58,6 @@ public abstract class OptimisationModel {
 	 * */
 	public OptimisationModel(Collection<JobVertex> vertices,
 							 Set<GeoLocation> locations,
-							 Map<JobVertex, GeoLocation> placedVertices,
 							 BandwidthProvider bandwidthProvider,
 							 Map<GeoLocation, Integer> slots,
 							 OptimisationModelParameters parameters) throws GRBException {
@@ -75,7 +74,13 @@ public abstract class OptimisationModel {
 			this.bandwidthProvider = new StaticBandwidthProvider(new TwoKeysMultiMap<>());
 		}
 
-		this.placedVertices = Preconditions.checkNotNull(placedVertices);
+		this.placedVertices = new HashMap<>();
+
+		for (JobVertex vertex : vertices) {
+			if(vertex.getGeoLocationKey() != null) {
+				placedVertices.put(vertex, new GeoLocation(vertex.getGeoLocationKey()));
+			}
+		}
 
 		this.slots = slots;
 

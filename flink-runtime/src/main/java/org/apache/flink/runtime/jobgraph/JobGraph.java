@@ -397,8 +397,6 @@ public class JobGraph implements Serializable {
 	 */
 	public void solveOptimisationModel(BandwidthProvider bandwidthProvider, Map<GeoLocation, Integer> availableSlotsByGeoLocation) {
 
-		Map<JobVertex, GeoLocation> placedVertices = makePlacedVertices();
-
 		setAllEdgeWeights();
 
 		//creating and solving the model
@@ -407,7 +405,6 @@ public class JobGraph implements Serializable {
 			model = new MultiLocationOptimisationModel(
 				this.getVerticesSortedTopologicallyFromSources(),
 				availableSlotsByGeoLocation.keySet(),
-				placedVertices,
 				bandwidthProvider,
 				availableSlotsByGeoLocation,
 				optimisationModelParameters);
@@ -486,17 +483,6 @@ public class JobGraph implements Serializable {
 			}
 		}
 	}
-
-	private Map<JobVertex, GeoLocation> makePlacedVertices() {
-		Map<JobVertex, GeoLocation> placedVertices = new HashMap<>();
-		for (JobVertex jobVertex : this.getVertices()) {
-			if(jobVertex.getGeoLocationKey() != null) {
-				placedVertices.put(jobVertex, new GeoLocation(jobVertex.getGeoLocationKey()));
-			}
-		}
-		return placedVertices;
-	}
-
 
 	/**
 	 * @return the {@link OptimisationModelSolution} for this graph, or null if the model hasn't been solved

@@ -14,8 +14,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class BasicOptimisationModel extends OptimisationModel {
-	public BasicOptimisationModel(Collection<JobVertex> vertices, Set<GeoLocation> locations, Map<JobVertex, GeoLocation> placedVertices, BandwidthProvider bandwidthProvider, Map<GeoLocation, Integer> slots, OptimisationModelParameters parameters) throws GRBException {
-		super(vertices, locations, placedVertices, bandwidthProvider, slots, parameters);
+	public BasicOptimisationModel(Collection<JobVertex> vertices, Set<GeoLocation> locations, BandwidthProvider bandwidthProvider, Map<GeoLocation, Integer> slots, OptimisationModelParameters parameters) throws GRBException {
+		super(vertices, locations, bandwidthProvider, slots, parameters);
 	}
 
 	public void init() throws GRBException{
