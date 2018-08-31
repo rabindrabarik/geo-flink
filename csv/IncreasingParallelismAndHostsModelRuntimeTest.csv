@@ -152,4 +152,3 @@ networkCost,executionSpeed,schedulerClassName,jobGraphCalssName,instanceSetClass
 3.9882005899704365,3051.0,SpyableGeoScheduler,"SimpleJobGraph(4,339)","CentralAndEdgeInstances(338,4,4)",531
 3.9534883720928806,3096.0,SpyableGeoScheduler,"SimpleJobGraph(4,344)","CentralAndEdgeInstances(343,4,4)",623
 3.9656160458454166,3141.0,SpyableGeoScheduler,"SimpleJobGraph(4,349)","CentralAndEdgeInstances(348,4,4)",615
-0.4,45.0,SpyableGeoScheduler,"SimpleJobGraph(4,5)","CentralAndEdgeInstances(4,4,4)",19

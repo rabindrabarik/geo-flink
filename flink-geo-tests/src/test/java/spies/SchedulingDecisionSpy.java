@@ -1,5 +1,6 @@
 package spies;
 
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.executiongraph.ExecutionEdge;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
@@ -45,14 +46,19 @@ public class SchedulingDecisionSpy {
 	private BandwidthProvider bandwidthProvider;
 
 	/**
+	 * Links JobID to execution graphs
+	 * */
+	private Map<JobID, ExecutionGraph> executionGraphs = new HashMap<>();
+
+	/**
 	 * The time it took to solve the model associated with the execution graph (in seconds).
 	 */
-	private Map<ExecutionGraph, Double> modelSolveTimes = new HashMap<>();
+	private Map<JobID, Double> modelSolveTimes = new HashMap<>();
 
 	/**
 	 * All the {@link ExecutionGraph} this spy knows scheduling decisions about.
 	 * */
-	private Set<ExecutionGraph> executionGraphs = new HashSet<>();
+	private Set<JobID> jobGraphs = new HashSet<>();
 
 	/**
 	 * Adds vertices that are considered as already placed by the {@link GeoScheduler}.
@@ -72,23 +78,24 @@ public class SchedulingDecisionSpy {
 	 * Tell this spy where the task has been scheduled.
 	 */
 	public void setSchedulingDecisionFor(ExecutionVertex vertex, LogicalSlot slot) {
-		executionGraphs.add(vertex.getExecutionGraph());
+		jobGraphs.add(vertex.getExecutionGraph().getJobID());
+		executionGraphs.put(vertex.getExecutionGraph().getJobID(), vertex.getExecutionGraph());
 		schedulingDecisions.put(vertex, slot);
 	}
 
 	/**
 	 * Tell this spy how long it took to solve the executionGraph model (in seconds).
 	 */
-	public void setModelSolveTime(ExecutionGraph executionGraph, double modelSolveTime) {
-		modelSolveTimes.put(executionGraph, modelSolveTime);
+	public void setModelSolveTime(JobID jobID, double modelSolveTime) {
+		modelSolveTimes.put(jobID, modelSolveTime);
 	}
 
 	/**
 	 * @return The time it took to solve the model associated with the execution graph (in seconds).
 	 * */
-	public double getModelSolveTime(ExecutionGraph executionGraph) {
-		if(modelSolveTimes.containsKey(executionGraph)) {
-			return modelSolveTimes.get(executionGraph);
+	public double getModelSolveTime(JobID jobID) {
+		if(modelSolveTimes.containsKey(jobID)) {
+			return modelSolveTimes.get(jobID);
 		} else {
 			return 0;
 		}
@@ -111,9 +118,11 @@ public class SchedulingDecisionSpy {
 	/**
 	 * @return all the {@link ExecutionGraph} this spy knows scheduling decisions about.
 	 */
-	public Set<ExecutionGraph> getGraphs() {
-		return executionGraphs;
+	public Set<JobID> getJobs() {
+		return jobGraphs;
 	}
+
+	public Map<JobID, ExecutionGraph> getExecutionGraphs() { return executionGraphs; }
 
 	/**
 	 * Calculate the network cost on current schedulingDecisions.
@@ -123,8 +132,14 @@ public class SchedulingDecisionSpy {
 	 * For all incoming edge of each vertex, check where the producer is and add the correct fraction of the edge weight to the network cost
 	 * if the producer is not on the same geo location.
 	 */
-	public double calculateNetworkCost(ExecutionGraph graph) {
+	public double calculateNetworkCost(JobID jobID) {
 		double networkCost = 0;
+
+		ExecutionGraph graph = executionGraphs.get(jobID);
+
+		if(graph == null) {
+			return 0;
+		}
 
 		preparePlacedVertices(graph);
 
@@ -250,8 +265,14 @@ public class SchedulingDecisionSpy {
 	 * The time is calculated as:
 	 * For all the JobVertex, sum how much they are parallelised and multiply by their weight. (The higher the result the faster the application).
 	 */
-	public double calculateExecutionSpeed(ExecutionGraph graph) {
+	public double calculateExecutionSpeed(JobID jobID) {
+		ExecutionGraph graph = executionGraphs.get(jobID);
+
 		double executionSpeed = 0;
+
+		if(graph == null) {
+			return 0;
+		}
 
 		for (JobVertexID jobVertexID : graph.getAllVertices().keySet()) {
 			ExecutionJobVertex executionJobVertex = graph.getJobVertex(jobVertexID);

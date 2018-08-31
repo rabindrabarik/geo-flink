@@ -1,5 +1,6 @@
 package testingFrameworks;
 
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GeoSchedulerTestingUtilsOptions;
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
@@ -9,7 +10,6 @@ import org.apache.flink.runtime.jobmanager.scheduler.StaticBandwidthProvider;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.test.util.MiniClusterResource;
-import org.apache.flink.types.TwoKeysMap;
 import org.apache.flink.util.TestLogger;
 import org.junit.After;
 import org.junit.Ignore;
@@ -125,12 +125,12 @@ public abstract class DataStreamSchedulingTestFramework extends TestLogger {
 
 		SchedulingDecisionSpy spy = scheduler.getSpies().iterator().next();
 
-		if(spy.getGraphs().size() != 1) {
+		if(spy.getJobs().size() != 1) {
 			throw new RuntimeException("Should have 1 graph");
 		}
 
-		ExecutionGraph executionGraph = spy.getGraphs().iterator().next();
+		JobID jobId= spy.getJobs().iterator().next();
 
-		SchedulingTestFrameworkUtils.writeTestOutcome(executionGraph, spy, (Scheduler) scheduler, writer, jobName, getTestGeoLocationAndBandwidths().getClassNameString());
+		SchedulingTestFrameworkUtils.writeTestOutcome(jobId, spy, (Scheduler) scheduler, writer, jobName, getTestGeoLocationAndBandwidths().getClassNameString());
 	}
 }

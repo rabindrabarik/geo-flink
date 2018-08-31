@@ -1,5 +1,6 @@
 package spies;
 
+import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.runtime.clusterframework.types.SlotProfile;
 import org.apache.flink.runtime.executiongraph.ExecutionGraph;
@@ -61,8 +62,13 @@ public class SpyableGeoScheduler extends GeoScheduler implements SpyableSchedule
 	public void addGraphSolution(ExecutionGraph executionGraph, OptimisationModelSolution solution) {
 		super.addGraphSolution(executionGraph, solution);
 		for (SchedulingDecisionSpy spy : spies) {
-			spy.setModelSolveTime(executionGraph, solution.getModelExecutionTime());
+			spy.setModelSolveTime(executionGraph.getJobID(), solution.getModelExecutionTime());
+		}
+	}
 
+	public void addGraphSolution(JobID jobID, OptimisationModelSolution solution) {
+		for (SchedulingDecisionSpy spy : spies) {
+			spy.setModelSolveTime(jobID, solution.getModelExecutionTime());
 		}
 	}
 

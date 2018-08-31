@@ -7,8 +7,8 @@ import writableTypes.TestJobGraph;
 
 public class SimpleJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
 
-	private final SimpleJobGraph simpleJobGraph = new SimpleJobGraph(4, 151);
-	private final CentralAndEdgeInstances instanceSet = new CentralAndEdgeInstances(150, 4, 4);
+	private final SimpleJobGraph simpleJobGraph = new SimpleJobGraph(198, (150*584+192)/198);
+	private final CentralAndEdgeInstances instanceSet = new CentralAndEdgeInstances(150, 192, 584);
 
 	@Override
 	protected TestJobGraph jobGraph() {

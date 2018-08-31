@@ -1,8 +1,14 @@
 package loopTests;
 
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
+import org.apache.flink.runtime.jobgraph.JobVertex;
+import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.junit.Before;
 import org.junit.runners.Parameterized;
 import testingFrameworks.JobGraphSchedulingTestFramework;
+import testingFrameworks.ModelRuntimeTestFramework;
 import writableTypes.CentralAndEdgeInstances;
 import writableTypes.SimpleJobGraph;
 import writableTypes.TestInstanceSet;
@@ -10,8 +16,10 @@ import writableTypes.TestJobGraph;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-public class IncreasingTasksAndSlotsJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
+public class IncreasingTasksAndSlotsModelRuntimeTest extends ModelRuntimeTestFramework {
 	private final static int MAX_TASKS = 700;
 
 	private static int initialEdgeClouds = 4;
@@ -33,23 +41,12 @@ public class IncreasingTasksAndSlotsJobGraphSchedulingTest extends JobGraphSched
 
 		for (int test = 0; test < MAX_TASKS / mapTasksIncrement; test++) {
 
-			Object[] params = new Object[5];
+			Object[] params = new Object[4];
 
-			params[0] = true;
-			params[1] = initialEdgeClouds;
-			params[2] = initialCentralSlots + test * centralSlotsIncrement;
-			params[3] = initialEachEdgeSlots + test * eachEdgeSlotsIncrement;
-			params[4] = initialMapTasks + test * mapTasksIncrement;
-
-			data.add(params);
-
-			params = new Object[5];
-
-			params[0] = false;
-			params[1] = initialEdgeClouds;
-			params[2] = initialCentralSlots + test * centralSlotsIncrement;
-			params[3] = initialEachEdgeSlots + test * eachEdgeSlotsIncrement;
-			params[4] = initialMapTasks + test * mapTasksIncrement;
+			params[0] = initialEdgeClouds;
+			params[1] = initialCentralSlots + test * centralSlotsIncrement;
+			params[2] = initialEachEdgeSlots + test * eachEdgeSlotsIncrement;
+			params[3] = initialMapTasks + test * mapTasksIncrement;
 
 			data.add(params);
 		}
@@ -57,16 +54,16 @@ public class IncreasingTasksAndSlotsJobGraphSchedulingTest extends JobGraphSched
 		return data;
 	}
 
-	@Parameterized.Parameter(1)
+	@Parameterized.Parameter(0)
 	public int edgeClouds;
 
-	@Parameterized.Parameter(2)
+	@Parameterized.Parameter(1)
 	public int centralSlots;
 
-	@Parameterized.Parameter(3)
+	@Parameterized.Parameter(2)
 	public int eachEdgeSlots;
 
-	@Parameterized.Parameter(4)
+	@Parameterized.Parameter(3)
 	public int mapTasks;
 
 	public CentralAndEdgeInstances instances;
@@ -91,5 +88,14 @@ public class IncreasingTasksAndSlotsJobGraphSchedulingTest extends JobGraphSched
 	@Override
 	protected TestInstanceSet instanceSet() {
 		return instances;
+	}
+
+
+	/**
+	 * @return the vertices that are already placed in a geolocation
+	 */
+	@Override
+	protected Map<JobVertex, GeoLocation> placedVertices() {
+		return new HashMap<>();
 	}
 }

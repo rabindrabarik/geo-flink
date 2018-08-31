@@ -418,7 +418,7 @@ public class JobGraph implements Serializable {
 			}
 
 			if (model.isSolved()) {
-
+				System.out.println("Model solved in: " + solution.getModelExecutionTime() + " seconds");
 				LOG.info("Model solved");
 				LOG.info("\n------------------------------");
 				LOG.info("Available slots:\n");

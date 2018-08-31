@@ -1,8 +1,12 @@
 package loopTests;
 
+import org.apache.flink.runtime.clusterframework.types.GeoLocation;
+import org.apache.flink.runtime.jobgraph.JobVertex;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.junit.Before;
 import org.junit.runners.Parameterized;
-import testingFrameworks.JobGraphSchedulingTestFramework;
+import testingFrameworks.ModelRuntimeTestFramework;
 import writableTypes.CentralAndEdgeInstances;
 import writableTypes.SimpleJobGraph;
 import writableTypes.TestInstanceSet;
@@ -10,8 +14,10 @@ import writableTypes.TestJobGraph;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGraphSchedulingTestFramework {
+public class IncreasingParallelismAndHostsModelRuntimeTest extends ModelRuntimeTestFramework {
 	private final static int MAX_EDGE_CLOUDS = 700;
 
 	private static int initialEdgeClouds = 4;
@@ -29,11 +35,10 @@ public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGrap
 
 		for (int test = 0; test < MAX_EDGE_CLOUDS / edgeCloudsIncrement; test++) {
 
-			Object[] params = new Object[3];
+			Object[] params = new Object[2];
 
-			params[0] = true;
-			params[1] = initialEdgeClouds + test * edgeCloudsIncrement;
-			params[2] = ((int) params[1] * initialEachEdgeSlots + initialCentralSlots) / initialMapTasks;
+			params[0] = initialEdgeClouds + test * edgeCloudsIncrement;
+			params[1] = ((int) params[0] * initialEachEdgeSlots + initialCentralSlots) / initialMapTasks;
 
 			data.add(params);
 		}
@@ -41,13 +46,11 @@ public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGrap
 		return data;
 	}
 
-	@Parameterized.Parameter(1)
+	@Parameterized.Parameter(0)
 	public int edgeClouds;
 
-	@Parameterized.Parameter(2)
+	@Parameterized.Parameter(1)
 	public int maxParallelism;
-
-
 
 	public CentralAndEdgeInstances instances;
 
@@ -70,6 +73,11 @@ public class IncreasingParallelismAndHostsJobGraphSchedulingTest extends JobGrap
 	@Override
 	protected TestInstanceSet instanceSet() {
 		return instances;
+	}
+
+	@Override
+	protected Map<JobVertex, GeoLocation> placedVertices() {
+		return new HashMap<>();
 	}
 
 }

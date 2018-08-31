@@ -79,6 +79,9 @@ public class OptimisationModelSolution {
 		return executionSpeed;
 	}
 
+	/**
+	 * Retunrs the time it took to excute the model, in seconds.
+	 * */
 	public double getModelExecutionTime() {
 		return modelExecutionTime;
 	}
