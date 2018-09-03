@@ -1,13 +1,9 @@
-package loopTests;
+package layeredTests;
 
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.jobgraph.JobVertex;
-import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.junit.Before;
 import org.junit.runners.Parameterized;
-import testingFrameworks.JobGraphSchedulingTestFramework;
 import testingFrameworks.ModelRuntimeTestFramework;
 import writableTypes.CentralAndEdgeInstances;
 import writableTypes.SimpleJobGraph;
@@ -19,10 +15,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class IncreasingTasksAndSlotsModelRuntimeTest extends ModelRuntimeTestFramework {
+public class IncreasingTasksStepHostsModelRuntimeTest extends ModelRuntimeTestFramework {
 	private final static int MAX_TASKS = 700;
 
-	private static int initialEdgeClouds = 4;
+	private final static int[] EDGE_CLOUDS_VALUES = {10, 50, 100, 500, 700};
 
 	private static int initialCentralSlots = 4;
 	private static int centralSlotsIncrement = 5;
@@ -39,18 +35,20 @@ public class IncreasingTasksAndSlotsModelRuntimeTest extends ModelRuntimeTestFra
 	public static Collection<Object[]> data() {
 		Collection<Object[]> data = new ArrayList<>();
 
-		for (int test = 0; test < MAX_TASKS / mapTasksIncrement; test++) {
+		for (int edgeClouds : EDGE_CLOUDS_VALUES) {
+			for (int test = 0; test < MAX_TASKS / mapTasksIncrement; test++) {
 
-			Object[] params = new Object[4];
+				Object[] params = new Object[4];
 
-			params[0] = initialEdgeClouds;
-			params[1] = initialCentralSlots + test * centralSlotsIncrement;
-			params[2] = initialEachEdgeSlots + test * eachEdgeSlotsIncrement;
-			params[3] = initialMapTasks + test * mapTasksIncrement;
+				params[0] = edgeClouds;
+				params[1] = initialCentralSlots + test * centralSlotsIncrement;
+				params[2] = initialEachEdgeSlots + test * eachEdgeSlotsIncrement;
+				params[3] = initialMapTasks + test * mapTasksIncrement;
 
-			data.add(params);
+				data.add(params);
+			}
+
 		}
-
 		return data;
 	}
 

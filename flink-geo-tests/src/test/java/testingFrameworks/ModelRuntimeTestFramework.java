@@ -10,6 +10,8 @@ import org.apache.flink.runtime.jobmanager.scheduler.Scheduler;
 import org.apache.flink.runtime.jobmanager.scheduler.StaticBandwidthProvider;
 import org.apache.flink.runtime.testingUtils.TestingUtils;
 import org.apache.flink.types.TwoKeysMultiMap;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -55,7 +57,7 @@ public abstract class ModelRuntimeTestFramework {
 
 	@Before
 	public void setup() {
-		//LogManager.getRootLogger().setLevel(Level.OFF);
+		LogManager.getRootLogger().setLevel(Level.OFF);
 		scheduler = new SpyableGeoScheduler(TestingUtils.defaultExecutor());
 
 		SpyableScheduler spyableScheduler = ((SpyableScheduler) scheduler);

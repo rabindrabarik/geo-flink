@@ -1,9 +1,7 @@
-package loopTests;
+package layeredTests;
 
 import org.apache.flink.runtime.clusterframework.types.GeoLocation;
 import org.apache.flink.runtime.jobgraph.JobVertex;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.junit.Before;
 import org.junit.runners.Parameterized;
 import testingFrameworks.ModelRuntimeTestFramework;
@@ -17,8 +15,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class IncreasingParallelismAndHostsModelRuntimeTest extends ModelRuntimeTestFramework {
+public class IncreasingHostsStepTasksModelRuntimeTest extends ModelRuntimeTestFramework {
 	private final static int MAX_EDGE_CLOUDS = 700;
+
+	private final static int[] MAP_TASKS_VALUES = {10, 50, 100, 500, 700};
 
 	private static int initialEdgeClouds = 4;
 	private static int edgeCloudsIncrement = 5;
@@ -27,20 +27,20 @@ public class IncreasingParallelismAndHostsModelRuntimeTest extends ModelRuntimeT
 
 	private static int initialEachEdgeSlots = 4;
 
-	private static int initialMapTasks = 4;
-
-	@Parameterized.Parameters(name = "edgeClouds: {0} parallelism: {1} ")
+	@Parameterized.Parameters(name = " edgeClouds: {0} parallelism: {1} mapTasks: {2}")
 	public static Collection<Object[]> data() {
 		Collection<Object[]> data = new ArrayList<>();
 
-		for (int test = 0; test < MAX_EDGE_CLOUDS / edgeCloudsIncrement; test++) {
+		for (int mapTasks : MAP_TASKS_VALUES) {
+			for (int test = 0; test < MAX_EDGE_CLOUDS / edgeCloudsIncrement; test++) {
+				Object[] params = new Object[3];
 
-			Object[] params = new Object[2];
+				params[0] = initialEdgeClouds + test * edgeCloudsIncrement;
+				params[1] = ((int) params[0] * initialEachEdgeSlots + initialCentralSlots) / mapTasks;
+				params[2] = mapTasks;
 
-			params[0] = initialEdgeClouds + test * edgeCloudsIncrement;
-			params[1] = ((int) params[0] * initialEachEdgeSlots + initialCentralSlots) / initialMapTasks;
-
-			data.add(params);
+				data.add(params);
+			}
 		}
 
 		return data;
@@ -52,6 +52,9 @@ public class IncreasingParallelismAndHostsModelRuntimeTest extends ModelRuntimeT
 	@Parameterized.Parameter(1)
 	public int maxParallelism;
 
+	@Parameterized.Parameter(2)
+	public int mapTasks;
+
 	public CentralAndEdgeInstances instances;
 
 	public SimpleJobGraph jobGraph;
@@ -60,7 +63,7 @@ public class IncreasingParallelismAndHostsModelRuntimeTest extends ModelRuntimeT
 	@Before
 	public void setup() {
 		instances = new CentralAndEdgeInstances(edgeClouds, initialCentralSlots, initialEachEdgeSlots);
-		jobGraph = new SimpleJobGraph(initialMapTasks, maxParallelism < 1 ? 1 : maxParallelism);
+		jobGraph = new SimpleJobGraph(mapTasks, maxParallelism < 1 ? 1 : maxParallelism);
 		super.setup();
 	}
 
